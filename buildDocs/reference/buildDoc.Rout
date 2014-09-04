@@ -1,0 +1,65 @@
+
+R version 3.0.2 (2013-09-25) -- "Frisbee Sailing"
+Copyright (C) 2013 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> ## install packages required to build the docs
+> #install.packages("devtools")
+> #library(devtools)
+> #install_github("staticdocs", "hadley")
+> #install_github("buildDocs", "hafen")
+> 
+> 
+> ## load the pacakge
+> library(buildDocs)
+Loading required package: whisker
+Loading required package: markdown
+Loading required package: knitr
+Loading required package: digest
+Loading required package: tools
+Loading required package: devtools
+
+Attaching package: ‘devtools’
+
+The following objects are masked from ‘package:utils’:
+
+    ?, help
+
+The following object is masked from ‘package:base’:
+
+    system.file
+
+> 
+> 
+> ## function to build the docs
+> #   assuming your working directory is 
+> #   doc.RHIPE/how-to-nuggets/
+> buildFunctionRef(
++    packageLoc = "~/Downloads/plyr",
++    outLoc = "./",
++ #   navPill = packageNavPill("https://github.com/user/project", docs = FALSE),
++    copyrightText = "Somebody"
++ )
+Loading required package: gsubfn
+Loading required package: proto
+Loading plyr
+Loading required namespace: Rcpp
+Error in get(name, envir = asNamespace(pkg), inherits = FALSE) : 
+  object 'package_info' not found
+Calls: buildFunctionRef -> ::: -> get
+Execution halted

@@ -1,0 +1,2 @@
+The tong.c is the C code which will be called from R.
+The result.txt is the result of running time for each method for question 3.

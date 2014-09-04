@@ -1,0 +1,17 @@
+#repleace patent with new word all over the file:
+:%s/wanttorepleace/repleacewith/g
+
+#repleace patent with new word between two lines:
+:from,tos/wanttorepleace/repleacewith/
+
+#add new word to the beginning of every lines in the file:
+:%s/^/wanttoadd/
+
+#add new word to the end of every lines in the file:
+:%s/$/wanttoadd/
+
+#delete the first one word in the beginning of every lines:
+:%s/^.\{1}/
+
+#delete the last two words in the end of each line:
+:%s/.\{2}$/

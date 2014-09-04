@@ -1,0 +1,14 @@
+For each node, I think it will get one task for both map and reduce step.
+
+The # of the task is specified by the mapred.map.tasks and mapred.reduce.tasks,
+however it is possible that two nodes are working on the same task. For instance
+if the values for one key is more than 3000 or the size is over 128MB, the one
+task will be splited to two nodes.
+
+Not sure how the tasks are distributed to the nodes, want to know how? and 
+want to know if we can control which task goes to which node?
+
+If we can control that, then we can combined the resampling method with parallel
+method to handle the big data. First resampling the data to get the profiling 
+data to test performance of nodes, and then according to the performance to 
+distribute the tasks.

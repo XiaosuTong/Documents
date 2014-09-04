@@ -1,0 +1,31 @@
+#list the blocks that make up each file in the filesystem
+hadoop fsck / -files -blocks
+
+#How to complete a mapreduce job
+#First of all, all java code should be saved as .java files, like MaxTemperature.java, 
+#MaxTemperatureMapper.java, and MaxTemperatureReducer.java
+#Then java scripts should be compiled to be .class files by using javac command.
+#/usr/local/hadoop/hadoop-core-1.0.3.jar contains all required class like 
+##org.apache.hadoop.io.IntWritable
+#temp_classes is the destination directory containing all .class which is being created 
+javac -classpath /usr/local/hadoop/hadoop-core-1.0.3.jar \
+-d temp_classes ~/hadoop/java.scripts/MaxTemperatureMapper.java
+javac -classpath /usr/local/hadoop/hadoop-core-1.0.3.jar \
+-d temp_classes ~/hadoop/java.scripts/MaxTemperatureReducer.java
+#sometime multiple classpath are needed, they can be different types, like a .jar file 
+##or a directory with .class files. 
+javac -classpath /usr/local/hadoop/hadoop-core-1.0.3.jar:~/hadoop/tmp_classes \
+-d temp_classes ~/hadoop/java.scripts/MaxTemperature.java
+
+#Create .jar file. -C specifies input files directory.
+jar -cvf MaxTemp.jar -C temp_classes/ .
+
+#Hadoop command
+hadoop jar ~/hadoop/jar/MaxTemp.jar MaxTemperature /app/hadoop/sample.txt /app/hadoop/MaxTemp.output
+#hadoop jar /path/to/.jar classname /HDFS/path/to/input /HDFS/path/to/output
+
+#Hadoop command without jar argument
+export HADOOP_CLASSPATH=$HOME/hadoop/jar/MaxTemp.jar
+hadoop MaxTemperature /app/hadoop/sample.txt /app/hadoop/MaxTemp.output
+#hadoop classname /HDFS/path/to/input /HDFS/path/to/output
+

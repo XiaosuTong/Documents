@@ -1,0 +1,8 @@
+Hello word
+i am learning the python during this summer,
+my name is Xiaosu Tong who is a PhD student 
+from Statistics Department at Purdue University.
+python is good
+python is easy to learn
+and python is hard
+and python is not easy to learn

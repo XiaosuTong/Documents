@@ -1,0 +1,13 @@
+#!/bin/bash
+now=`date '+%H'`
+if [ ${now} -lt 12 ]
+then 
+	greeting="Good Mmorning, Xiaosu!"
+elif [ ${now} -lt 18 ]
+then
+	greeting="Good afternoon, Xiaosu!"
+else
+	greeting="Good evening, Xiaosu!"
+fi
+echo "$greeting"
+exit 0

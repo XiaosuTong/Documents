@@ -1,0 +1,9 @@
+tuning parameters: t.window, s.window, s.degree
+
+moving window hass global 
+
+global model, working on covariance matrix
+K = C*rho, rho = 0 if |x|>distance
+\hat Y(s_0) = \Sum a_i(s_0)*Y(s_i), where a_i(s_0) is from K = C*rho
+
+

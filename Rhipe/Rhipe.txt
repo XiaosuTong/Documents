@@ -1,0 +1,207 @@
+##Access jobtracker on adhara
+ssh -L50030:adhara1:50030 shaula.stat.purdue.edu
+http://localhost:50030
+
+##Access jobtracker on rossmann
+ssh -L50030:hadoop-01:50030 rossmann-wsc.rcac.purdue.edu
+http://localhost:50030
+
+##Block size for sequence files
+Btw, if you have sequence files as input you can force the map tasks to be large,
+by setting the block size to be small e.g. 
+rhwatch(..., mapred=list(mapred.max.split.size = numInBytes)) ...
+
+
+##rhclean
+Each time we run a map-reduce job, a temporary is created under /tmp on the 
+HDFS. These tmp files are not deleted unless you call rhclean() with default 
+argument. It will try to delete all the tmp files created. However, the 
+permission setup on our cluster is such that a user is not allowed to delete 
+another user's file/directory. We can create a temp folder in your user folder 
+and set HADOOP.TMP.FOLDER to that.
+
+##Why we will have tmp file for each map-reduce job
+temp files are created if params are used, or if references to globals values 
+are detected. temp files are also created if output is missing (a temp output 
+folder is created).
+
+##What is the difference between mappers/reducers and maptasks/reducetasks?
+mappers/reducers have no clear defination, but they usually refers to the 
+core that are running map tasks or reduce tasks.
+
+##What is map/reduce task capacity?
+The number of tasks can be executed at the one moment. For instance, on adhere
+the map/reduce task capacity is 72. This can be set by "mapred.tasktracker.map.tasks.maximum".
+
+##Map
+The map is an R expression (created using the R command expression) that is evaluated by 
+RHIPE during the map stage. For each task, RHIPE will call this expression multiple times. 
+If a task consists of W key,value pairs, the expression map will be called 
+\(\lceil \frac{W}{ \text{rhipe\_map\_buffsize}} \rceil\) times. The default value of 
+rhipe_map_buff_size is 10,000 and is user configurable. Each time map is called, the vectors 
+map.keys and map.values contain rhipe_map_buffsize keys and values respectively. If the objects
+are large it advisable to reduce the size of rhipe_map_buff_size . See the Airline examples where
+the value was set to 10 (each value was 5000x8 data frame).
+
+##Reduce
+Each Reduce task is a partition of the intermediate keys produced as the output of the Map phase. 
+The above code is run for every Reduce task. RHIPE implements the above algorithm by calling the 
+R expression reduce$pre at line 3. In this expression, the user will have the new key present in 
+reduce.key. After which RHIPE will call reduce$reduce several times until the condition in line 4 
+is false. Each time reduce\$reduce is called, the vector reduce.values will contain a subset of 
+the intermediate map values associated with reduce.key. The length of this vector is a default 
+10,000 but can be changed via the rhipe_reduce_buff_size option. Finally when all values have been
+processed, RHIPE calls reduce$post at line 7. At this stage, all intermediate values have been sent 
+and the user is expected to write out the final results. Variables created in reduce$pre will be 
+visible in the subsequent expressions. Thus to compute the sum of all the intermediate values,
+reduce is optional, and if not specified the map output keys will be sorted and shuffled and saved 
+to disk. Thus it is possible to set inout[2] to map when the reduce expression is not given to obtain 
+a MapFile. To turn of sorting and shuffling and instead write the map output to disk directly, 
+set mapred.reduce.tasks to zero in mapred. In this case, the output keys are not sorted and the output
+format should not be map
+
+##What determines how many maptasks/reducetasks are run?
+For input like "sequence" and "text", the number of maptasks is determined 
+by the number of blocks of the data. The default size of one block in HDFS 
+is 128MB. For lapply input, which means input=c(N,maptasks), we can specify 
+how many maptasks are run in input arguement. Here is a trick, we definitely 
+can specify any number of maptasks in lapply input, however, the blocks 
+effect still exist. For instance, if we are planning to create a data with 
+1GB, each subset is 16MB, so totally we have 2^6 subset. If we specify the 
+input=c(2^6, 6), there will be just 6 maptasks. However, if we use the output 
+of this map only mapreduce job to be an input for another mapreduce job, the 
+number of maptasks will be 1GB/128MB=8. This means even though we just defined
+6 maptasks, there is actually 8 maptasks. On the other hand, if we specify 
+the input=c(2^6, 10), which means we specify more maptasks number than it need,
+same as 6, there will be 8 maptasks for furture mapreduce.
+
+
+##What is syc points?
+The block size of the files in HDFS is 128MB. The HDFS will cut the files to 
+blocks based on this size, like put a bar right at the 128MB end. At the same
+time, there is another small bar called syc point. HDFS put this syc points
+every around 4KB in the files. So the first maptask will get the first block
+plus the extra until the first syc point in the second block. And the second
+maptask will get the second block but only work from the first syc point, and
+also get the extra until the first syc point in the third block. There is a 
+special situation. We know that the key/value pair is the smallest executived
+unit in mapreduce. If the last key/value pair takes 2MB space in the second 
+block, the first maptask will read the first block and the extra in the second
+block until the last key/value pair end. So the cut off point for each maptask
+is like min(first syc point, structure bound). 
+
+
+##How are KV pairs assigned to mappers/reducers?
+The map argument is an R expression. Hadoop will read key,value pairs, send 
+them to RHIPE which in turn buffers them by storing them in a R list: map.values 
+and map.keys respectively. Once the buffer is full, RHIPE calls the map expression. 
+The default length of map.values (and map.keys) is 10,000
+
+##Number of tasks per node
+"mapred.tasktracker.map.tasks.maximum" deals with the number of map tasks 
+that should be launched on each node, not the number of nodes to be used 
+for each map task. In the Hadoop architecture, there is 1 tasktracker for 
+each node (slaves) and 1 job tracker on a master node (master). So if you 
+set the property mapred.tasktracker.map.tasks.maximum, it will only change 
+the number of map tasks to be executed per node. The range of 
+"mapred.tasktracker.map.tasks.maximum" is from 1/2*cores/node to 2*cores/node.
+
+
+##Is it possible that multiple nodes working on the same task?
+It should be asked that is it possible that multiple cores working on the same
+task. Task is the small unit for a Mapreduce to execute. If the task is above
+128MB, that task will be divided to two tasks. If the task is smaller than 128MB
+then it will be distributed to a core to be executed. However, if the number of
+key/value pairs are more than 3000, then the core will run the part of task each
+time. For example, the task has 4000 key/value pairs, then the core will first
+run the first 3000 pairs, then same core will run the 1000 left pairs. So the 
+core is executing the task iteratively. The answer to the question is yes. Since
+the task is the smallest unit for execution, then we cannot use two cores to
+execute the task in such way that we combine the computation ability of two cores
+to execute that task. However, two cores work on one task means two cores will
+execute the task independently. If the original core which are running the task
+is very slow, and there is another core is avaliable, then the second core will
+start to execute the task, whichever finish first, the other one will be killed,
+all temporary files will be deleted.
+
+
+##What is the difference between job and task?
+A mapreduce code together is called a job. Jobtracker will give us an idea that
+how many percent of the job has been finished.
+One the worker nodes, besides the cores that will be used to execute mapreduce
+task, there are other two cores to be used to process tasktracker and datanode.
+For master node, besides the cores that will be used to execute mapreduce
+task, there are other four cores to be used to process tasktracker, jobtracker,
+datanode, and namenode. Mapreduce and HDFS are two relatively independent two
+systems, but do exist comunication between these two systems. Namenode and
+datanode are from HDFS aspect, tasktracker and jobtracker are from mapreduce
+aspect. 
+
+
+##What is jobtracker?
+The JobTracker is the service within Hadoop that farms out MapReduce tasks 
+to specific nodes in the cluster, ideally the nodes that have the data, or at 
+least are in the same rack. 
+1. Client applications submit jobs to the Jobtracker.
+2. The JobTracker talks to the NameNode to determine the location of the data
+3. The JobTracker locates TaskTracker nodes with available slots at or near the data
+4. The JobTracker submits the work to the chosen TaskTracker nodes.
+5. The TaskTracker nodes are monitored. If they do not submit heartbeat signals 
+   often enough, they are deemed to have failed and the work is scheduled on a 
+   different TaskTracker.
+6. A TaskTracker will notify the JobTracker when a task fails. The JobTracker 
+   decides what to do then: it may resubmit the job elsewhere, it may mark that 
+   specific record as something to avoid, and it may may even blacklist the TaskTracker 
+   as unreliable.
+7. When the work is completed, the JobTracker updates its status.
+8. Client applications can poll the JobTracker for information. 
+
+
+##What is tasktracker?
+A TaskTracker is a node in the cluster that accepts tasks - Map, Reduce and Shuffle 
+operations - from a JobTracker.
+Every TaskTracker is configured with a set of slots, these indicate the number of 
+tasks that it can accept. When the JobTracker tries to find somewhere to schedule a 
+task within the MapReduce operations, it first looks for an empty slot on the same 
+node that hosts the DataNode containing the data, and if not, it looks for an empty 
+slot on a machine in the same rack.
+The TaskTracker spawns a separate JVM processes to do the actual work; this is to 
+ensure that process failure does not take down the task tracker. The TaskTracker 
+monitors these spawned processes, capturing the output and exit codes. When the process 
+finishes, successfully or not, the tracker notifies the JobTracker. The TaskTrackers 
+also send out heartbeat messages to the JobTracker, usually every few minutes, to 
+reassure the JobTracker that it is still alive. These message also inform the JobTracker 
+of the number of available slots, so the JobTracker can stay up to date with where in 
+the cluster work can be delegated. 
+
+
+##What if there is a large number of values associated with one key?
+In the RHIPE, there is a limit for number of key/value pairs belong to one
+map.keys/map.values pair. This means the buff size for map.keys/map.values
+pair is 3000 key/value pairs per map.keys/map.values pair. For both "lapply"
+and "sequence" input, this count buff effect exist. The map.tasks number
+here will not affect this 3000 buff. For instance, input=c(9003,3), the task 
+number is 3, but the number of map.keys/map.values pairs are 6, which means
+each task will handle two map.keys/values packages. Another situation is for
+"sequence" input, if more than 3000 values associated with one key, those
+key/value pairs will be distributed to different map.keys/map.values pairs. 
+Here the reduce.tasks only controls how many pairtitions there will be for
+the intermediate output. Here map.keys/map.values pairs tend to be equally
+distributed to pairtitions. I think after map function, all key/value pairs
+are tend to be equally distributed to pairtitions. If the number of reduce.tasks
+is larger than the key/value pairs, then some of partitions will be empty 
+files.
+Same count buff effect exist for reduce.keys/reduce.values pairs. If more
+than 3000 key/value pairs are related to one key, they will be distributed
+to different reduce.keys/reduce.values pairs. This is why we have to use
+pre, reduce, and post to combine results for same key from different 
+reduce.keys/reduce.values pairs.
+
+
+##Is map.keys/map.values the package worked on one node or on one core?
+On one core for sure. map.keys/map.values are the execution objects for one core.
+If the number of key/value pairs are smaller than 3000 in that map.keys/map.values
+package, then this map.keys/map.values pair will be executed on the core at one time.
+On the other hand, if the number of key/value pairs are more than 3000 in that 
+map.keys/map.values pair, then those key/value pairs will be executed on the same 
+core at different execution iterative time.

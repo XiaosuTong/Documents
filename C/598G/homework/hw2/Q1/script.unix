@@ -1,0 +1,22 @@
+# Problem (b)
+sort dummy.txt | cut --delimiter=" " -f 1 | uniq -d | wc -l
+#first sort the file and then just focus on the first field of the data. After that print duplicate lines and count the number of different labels
+
+#Problem (c)
+cut --delimiter=" " -f 1 dummy.txt > dummy.Y  
+#cut the first field of dummy.txt file to dummy.Y file
+
+cut --delimiter=" " -f 2 dummy.txt > dummy.X1 | cut --delimiter=" " -f 3 dummy.txt > dummy.X2 | cut --delimiter=" " -f 4 dummy.txt >  dummy.X3 | paste --delimiter=" " dummy.X1 dummy.X2 dummy.X3 > dummy.X
+#cut the second field of dummy.txt file to dummy.X1 file, cut the third field of dummy.txt file to dummy.X2 file, cut the fourth field of dummy.txt file to dummy.X3 file, and then paste the dummy.X1 dummy.X2 dummy.X3 files to file dummy.X.
+
+#Problem (d)
+sort dummy.txt > dummy-sort.txt
+#sort the file dummy.txt and then creat the file dummy-sort.txt to contain the result
+
+#Problem  (e)
+tr " " "\n" < dummy.X | sort -r | head -c1 
+#First replace all blacks with enter, then sort the file based on first value and print the first byte of the file.
+
+#Problem (f)
+tr " " "\n" < a1a | sort -r | head -c2
+

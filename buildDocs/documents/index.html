@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Word Counts Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <link href="assets/bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/custom/custom.css" rel="stylesheet">
+    <!-- font-awesome -->
+    <link href="assets/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- prism -->
+    <link href="assets/prism/prism.css" rel="stylesheet">
+    <link href="assets/prism/prism.r.css" rel="stylesheet">
+    <script type='text/javascript' src='assets/prism/prism.js'></script>
+    <script type='text/javascript' src='assets/prism/prism.r.js'></script>
+    
+    
+    
+    <script type="text/javascript" src="assets/MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+   MathJax.Hub.Config({    
+     extensions: ["tex2jax.js"],    
+     "HTML-CSS": { scale: 100}    
+   });
+   </script>
+    
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.js"></script>
+    <![endif]-->
+    
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+    <!-- <link href='http://fonts.googleapis.com/css?family=Lustria' rel='stylesheet' type='text/css'> -->
+    <link href='http://fonts.googleapis.com/css?family=Bitter' rel='stylesheet' type='text/css'>
+    
+
+    <!-- Fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="ico/apple-touch-icon-57-precomposed.png">
+                                   <!-- <link rel="shortcut icon" href="ico/favicon.png"> -->
+  </head>
+
+  <body>
+
+    <div class="container-narrow">
+
+      <div class="masthead">
+        <ul class="nav nav-pills pull-right">
+           <li class='active'><a href='index.html'>Docs</a></li><li class=''><a href='functionref.html'>Function Ref</a></li><li><a href='https://github.com/XiaosuTong'>Github <i class='fa fa-github'></i></a></li>
+        </ul>
+        <p class="myHeader">Word Counts Example</p>
+      </div>
+
+      <hr>
+
+<div class="container-fluid">
+   <div class="row-fluid">
+   
+   <div class="col-md-3 well">
+   <ul class = "nav nav-list" id="toc">
+   <li class='nav-header unselectable' data-edit-href='nuggets.Rmd'>Word counts here we go</li>
+      
+      <li class='active'>
+         <a target='_self' class='nav-not-header' href='#map'>Map</a>
+      </li>
+
+
+      <li class='active'>
+         <a target='_self' class='nav-not-header' href='#sorting-and-shuffling'>Sorting and Shuffling</a>
+      </li>
+
+
+      <li class='active'>
+         <a target='_self' class='nav-not-header' href='#reduce'>Reduce</a>
+      </li>
+
+
+      <li class='active'>
+         <a target='_self' class='nav-not-header' href='#combiner'>Combiner</a>
+      </li>
+
+
+      <li class='active'>
+         <a target='_self' class='nav-not-header' href='#multiple-input-files'>Multiple input files</a>
+      </li>
+
+   </ul>
+   </div>
+
+<div class="col-md-9 tab-content" id="main-content">
+
+<div class='tab-pane active' id='map'>
+<h3>Map</h3>
+
+<p>We can first write a map function which just collect the key/value pairs from text file. Map is an R expression that is 
+evaluated by RHIPE during the map stage. For each task, RHIPE will call this expression multiple times. This can also 
+be a function of two arguments,the key and the value.</p>
+
+<pre><code class="r">map1 &lt;- expression({
+    lapply(seq_along(map.keys), function(r){
+      rhcollect(map.keys[[r]], map.values[[r]])
+    })
+})
+</code></pre>
+
+<p>Here the map.keys and map.values are two lists which are consist of all keys and all values that will be excuted in one 
+task at one monment respectively. rhcollect is the function that collect the key/value pairs in RHIPE. After defined
+the map expression, the main function that execute mapreduce job is rhwatch(). Input and output argument in rhwatch() 
+function is used to specify the path on HDFS of input file and output file respectively, and there are three types of file
+we can consider, text, sequence, and map file. Mapred argument is a list that can be used to customize the Hadoop and RHIPE 
+options. Here we specify the mapred.reduce.tasks to be 10, so the number of reduce tasks will be set to be 10. Another 
+potential parameter in mapred is the mapred.map.tasks, which can specify the number of map tasks. However it is not 
+necessary to do this here since the input file is text. The mapred.map.tasks number is automatically decided by Hadoop 
+based on the size of text file. The map tasks number is equal to total size of text file divide by 128 Mb.</p>
+
+<pre><code class="r">mr1 &lt;- rhwatch(
+  map = map1,
+  input = rhfmt(&quot;/tmp/ALoversComplaint01.txt&quot;, type = &quot;text&quot;),
+  output = rhfmt(&quot;/tmp/identity.map.output&quot;, type = &quot;sequence&quot;),
+  mapred = list( mapred.reduce.tasks = 10 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job1 &lt;- rhex(mr1, async = FALSE)
+rst1 &lt;- rhread(&quot;/tmp/identity.map.output&quot;)
+</code></pre>
+
+<pre><code class="r">length(rst1)
+</code></pre>
+
+<pre><code>[1] 185
+</code></pre>
+
+<pre><code class="r">head(rst1, 3)
+</code></pre>
+
+<pre><code>[[1]]
+[[1]][[1]]
+[1] 2190
+
+[[1]][[2]]
+[1] &quot;And often kiss&#39;d, and often &#39;gan to tear:&quot;
+
+
+[[2]]
+[[2]][[1]]
+[1] 154
+
+[[2]][[2]]
+[1] &quot;And down I laid to list the sad-tuned tale;&quot;
+
+
+[[3]]
+[[3]][[1]]
+[1] 4169
+
+[[3]][[2]]
+[1] &quot;If best were as it was, or best without.&quot;
+</code></pre>
+
+<p>The result is a list with length equals to 185, which is the number of rows in total. Each element is also a 
+list with length two. The first element is key, and the second element is value.
+We can pull out all the keys from the output object by using the following code:</p>
+
+<pre><code class="r">head(unlist(lapply(rst1, &quot;[[&quot;, 1)), 20)
+</code></pre>
+
+<pre><code> [1] 2190  154 4169 7769 1114 6524 1378 7560 2503 6315 5295 7855 4785  766 1288
+[16] 7200 2583 3358  105 4210
+</code></pre>
+
+<p>It is easy to find out that the keys are not integers from 1 to 185. RHIPE actually generates 185 different
+integers as keys. This is ok since we are more interested in the values instead of keys at this monment.</p>
+
+<p>The input and output of map function are both key/value pairs. In other words, the map function processes a 
+key/value pair to generate a set of intermediate key/value pairs. So we are planning to process the key/value 
+pairs we got previously into new key/value pairs which every word is the key, and the corresponding value would 
+be integer 1. In order to achieve this, we need to conduct some text processing work first. As we can see from the 
+value, there are some special character in each row of text file. We have to remove them from the string. 
+For example:</p>
+
+<pre><code class="r">value &lt;- lapply(lapply(rst1, &quot;[[&quot;, 2), function(r) gsub(&quot;[[:punct:]]&quot;, &quot;&quot;, r))
+head(value, 3)
+</code></pre>
+
+<pre><code>[[1]]
+[1] &quot;And often kissd and often gan to tear&quot;
+
+[[2]]
+[1] &quot;And down I laid to list the sadtuned tale&quot;
+
+[[3]]
+[1] &quot;If best were as it was or best without&quot;
+</code></pre>
+
+<p>Then we have to split each row by space, such that we can create new key/value pair for each word. rhcollect 
+is the function in mapreduce procedure to collect the key/value pairs. For this example, we want to collect a
+key/value pair for every word in every row.</p>
+
+<pre><code class="r">map2 &lt;- expression({
+  lapply(seq_along(map.keys), function(r) {
+    line = gsub(&quot;[[:punct:]]&quot;, &quot;&quot;, map.values[[r]])
+    line = strsplit(line, split=&quot; +&quot;)[[1]]
+    lapply(line, function(word) {
+      rhcollect(word, 1)
+    })
+  })
+})
+</code></pre>
+
+<p>Before we consider any reduce function, let us have a look at the result come from map function. Since reduce function is 
+optional in a mapreduce job, we can only specify the map function and then check the intermediate key/value pairs.</p>
+
+<pre><code class="r">mr2 &lt;- rhwatch(
+  map = map2,
+  input = rhfmt(&quot;/tmp/ALoversComplaint01.txt&quot;, type = &quot;text&quot;),
+  output = rhfmt(&quot;/tmp/word.count.map.output&quot;, type = &quot;sequence&quot;),
+  mapred = list( mapred.reduce.tasks = 5 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job2 &lt;- rhex(mr2, async = FALSE)
+rst2 &lt;- rhread(&quot;/tmp/word.count.map.output&quot;)
+</code></pre>
+
+<p>Another way to achieve the same purpose is use the &quot;identity.map.output&quot; as the input file:</p>
+
+<pre><code class="r">mr2 &lt;- rhwatch(
+  map = map2,
+  input = rhfmt(&quot;/tmp/identity.map.output&quot;, type = &quot;sequence&quot;),
+  output = rhfmt(&quot;/tmp/word.count.map.output&quot;, type = &quot;sequence&quot;),
+  mapred = list( mapred.reduce.tasks = 5 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job2 &lt;- rhex(mr2, async = FALSE)
+rst2 &lt;- rhread(&quot;/tmp/word.count.map.output&quot;)
+</code></pre>
+
+<p>The result from second job is still a list with length 1425. This is the total number of words in the text file. Each element
+is a list of key/value pair.</p>
+
+<pre><code class="r">length(rst2)
+</code></pre>
+
+<pre><code>[1] 1425
+</code></pre>
+
+<pre><code class="r">head(rst2, 3)
+</code></pre>
+
+<pre><code>[[1]]
+[[1]][[1]]
+[1] &quot;I&quot;
+
+[[1]][[2]]
+[1] 1
+
+
+[[2]]
+[[2]][[1]]
+[1] &quot;I&quot;
+
+[[2]][[2]]
+[1] 1
+
+
+[[3]]
+[[3]][[1]]
+[1] &quot;I&quot;
+
+[[3]][[2]]
+[1] 1
+</code></pre>
+
+</div>
+
+
+<div class='tab-pane' id='sorting-and-shuffling'>
+<h3>Sorting and Shuffling</h3>
+
+<p>Within previous several example code, we specify mapred.reduce.tasks parameter in mapred argument of rhwatch() function. The
+number of mapred.reduce.tasks decide how many reduce tasks will be launched. The intermediate key/value pairs produced by the 
+map function will be partitioned into mapred.reduce.tasks pieces. For a given piece, the intermediate key/value pairs are processed 
+in order. This ordering guarantee makes it easy to generate a sorted output file per piece, which is useful when the output file 
+format needs to support efficient random access lookups by key, or users of the output find it convenient to have the data sorted.
+For example, we are trying to find all key/value pairs that have &quot;I&quot; as key.</p>
+
+<pre><code class="r">which(unlist(lapply(rst2, &quot;[[&quot;, 1)) == &quot;I&quot;)
+</code></pre>
+
+<pre><code> [1]  1  2  3  4  5  6  7  8  9 10
+</code></pre>
+
+<p>Obviously, all key/values with same key are ordered together. However, this automatically sorting is time consuming. If for some
+reason we want to skip this sorting process, we can achieve this by specifying the mapred.reduce.tasks to be 0.</p>
+
+<pre><code class="r">mr2 &lt;- rhwatch(
+  map = map2,
+  input = rhfmt(&quot;/tmp/identity.map.output&quot;, type = &quot;sequence&quot;),
+  output = rhfmt(&quot;/tmp/word.count.map.output&quot;, type = &quot;sequence&quot;),
+  mapred = list( mapred.reduce.tasks = 0 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job2 &lt;- rhex(mr2, async = FALSE)
+rst2 &lt;- rhread(&quot;/tmp/word.count.map.output&quot;)
+which(unlist(lapply(rst2, &quot;[[&quot;, 1)) == &quot;I&quot;)
+</code></pre>
+
+<pre><code> [1]   54  371  456  545  627  838 1241 1325 1345 1376
+</code></pre>
+
+<p>Now all key/value pairs sharing same key are scattered.</p>
+
+</div>
+
+
+<div class='tab-pane' id='reduce'>
+<h3>Reduce</h3>
+
+<p>The last step would be including a reduce function in our mapreduce job. In RHIPE, reduce is an R expression that is evaluated 
+by RHIPE during the reduce stage, or it is a vector of expressions with names pre, reduce, and post. All key/value pairs that 
+share same key will be grouped together and processed to be applied reduce funtion. reduce.key is the shared key, and reduce.values
+is a list that includes all values corresponding to that single reduce.key. In pre session, we initialize the total count to be 0.
+In reduce session, we cumulative all reduce.values. Finally in post session, we collect the final key/value pair for each unique
+word.</p>
+
+<pre><code class="r">map3 &lt;- expression({
+  lapply(seq_along(map.keys), function(r) {
+    line = gsub(&quot;[[:punct:]]&quot;, &quot;&quot;, map.values[[r]])
+    line = strsplit(line, split=&quot; +&quot;)[[1]]
+    lapply(line, function(word) {
+      rhcollect(word, 1)
+    })
+  })
+})
+reduce3 &lt;- expression(
+  pre = {
+        count = 0
+  },
+  reduce = {
+        count = count + sum(unlist(reduce.values))
+  },
+  post = {
+        rhcollect(reduce.key, count)
+  }
+)
+</code></pre>
+
+<pre><code class="r">mr3 &lt;- rhwatch(
+  map = map3,
+  reduce = reduce3,
+  input = rhfmt(&quot;/tmp/ALoversComplaint01.txt&quot;,type=&quot;text&quot;),
+  output = rhfmt(&quot;/tmp/word.count.output&quot;, type=&quot;sequence&quot;),
+  mapred = list( mapred.reduce.tasks=5 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job3 &lt;- rhex(mr3, async = FALSE)
+rst3 &lt;- rhread(&quot;/tmp/word.count.output&quot;)
+</code></pre>
+
+<pre><code class="r">length(rst3)
+</code></pre>
+
+<pre><code>[1] 745
+</code></pre>
+
+<pre><code class="r">head(rst3, 3)
+</code></pre>
+
+<pre><code>[[1]]
+[[1]][[1]]
+[1] &quot;I&quot;
+
+[[1]][[2]]
+[1] 10
+
+
+[[2]]
+[[2]][[1]]
+[1] &quot;He&quot;
+
+[[2]][[2]]
+[1] 1
+
+
+[[3]]
+[[3]][[1]]
+[1] &quot;In&quot;
+
+[[3]][[2]]
+[1] 3
+</code></pre>
+
+<p>Of course, the class of output object, which is a list, may not be convenient for further analysis in R. It is easy to convert 
+list to be a data.frame in R.</p>
+
+<pre><code class="r">data &lt;- data.frame(key=unlist(lapply(rst3, &quot;[[&quot;, 1)), value=unlist(lapply(rst3, &quot;[[&quot;,2))
+head(data)
+</code></pre>
+
+<pre><code>key value
+1   I    10
+2  He     1
+3  In     3
+4  My     2
+5  Or     3
+6  at     1
+</code></pre>
+
+</div>
+
+
+<div class='tab-pane' id='combiner'>
+<h3>Combiner</h3>
+
+<p>After map function is finished, there may be significant repetition in the intermediate keys produced by each map task.
+For our example here, it is highly possible that each map task will produce hundreds or thousands of records of the form
+(the, 1). All of these counts will be sent over the network to a single reduce task and then added together by the reduce 
+function to produce one number. A better way to speed up this mapreduce job is try to eliminate the objects that need to 
+be transferred. So we can specify an optional combiner function that does partial merging of intermediate key/value pairs
+before it is sent over the network.</p>
+
+<p>The combiner function is executed on each machine that performs a map task. Typically the same code is used to implement 
+both the combiner and the reduce functions.</p>
+
+<pre><code class="r">mr4 &lt;- rhwatch(
+  map = map3,
+  reduce = reduce3,
+  input = rhfmt(&quot;/tmp/ALoversComplaint01.txt&quot;,type=&quot;text&quot;),
+  output = rhfmt(&quot;/tmp/word.count.combiner.output&quot;, type=&quot;sequence&quot;),
+  mapred = list( mapred.reduce.tasks=5 ),
+  combiner = TRUE,
+  readback = FALSE,
+  noeval = TRUE
+)
+job4 &lt;- rhex(mr4, async = FALSE)
+rst4 &lt;- rhread(&quot;/tmp/word.count.combiner.output&quot;)
+</code></pre>
+
+<p>Technically, the number of input key/value pairs to reduce function is smaller when we active the combiner function. One way
+to check this is that we can go to the jobtracker webpage, one of counter named &quot;Reduce input records&quot; tells us how many
+input key/value pairs to the reduce function. For previous example, the &quot;Reduce input records&quot; counter is 1,425. When we 
+consider the combiner function, the &quot;Reduce input records&quot; counter is 745. So combiner function does help us to eliminate
+the number of key/value pairs to be transported from map to reduce.</p>
+
+</div>
+
+
+<div class='tab-pane' id='multiple-input-files'>
+<h3>Multiple input files</h3>
+
+<p>It is quite common that we have more than one input files. RHIPE allows us to have a vector of path string to be input. For
+this situation, </p>
+
+<pre><code class="r">mr5 &lt;- rhwatch(
+  map = map3,
+  reduce = reduce3,
+  input = rhfmt(c(&quot;/tmp/ALoversComplaint01.txt&quot;, &quot;/tmp/ALoversComplaint02.txt&quot;), type=&quot;text&quot;),
+  output = rhfmt(&quot;/tmp/word.count.total.output&quot;, type=&quot;sequence&quot;),
+  mapred = list( mapred.reduce.tasks=5 ),
+  readback = FALSE,
+  combiner = TRUE,
+  noeval = TRUE
+)
+job5 &lt;- rhex(mr5, async = FALSE)
+rst5 &lt;- rhread(&quot;/tmp/word.count.total.output&quot;)
+</code></pre>
+
+<pre><code class="r">length(rst5)
+</code></pre>
+
+<pre><code>[1] 1171
+</code></pre>
+
+<pre><code class="r">head(rst5, 3)
+</code></pre>
+
+<pre><code>[[1]]
+[[1]][[1]]
+[1] &quot;I&quot;
+
+[[1]][[2]]
+[1] 20
+
+
+[[2]]
+[[2]][[1]]
+[1] &quot;He&quot;
+
+[[2]][[2]]
+[1] 2
+
+
+[[3]]
+[[3]][[1]]
+[1] &quot;In&quot;
+
+[[3]][[2]]
+[1] 8
+</code></pre>
+
+</div>
+
+   
+   <ul class="pager">
+      <li><a href="#" id="previous">&larr; Previous</a></li> 
+      <li><a href="#" id="next">Next &rarr;</a></li> 
+   </ul>
+</div>
+
+
+</div>
+</div>
+
+<hr>
+
+<div class="footer">
+   <p>&copy; Team-Rhipe, 2014</p>
+</div>
+</div> <!-- /container -->
+
+<script src="assets/jquery/jquery.js"></script>
+<script type='text/javascript' src='assets/custom/custom.js'></script>
+<script src="assets/bootstrap/js/bootstrap.js"></script>
+<script src="assets/custom/jquery.ba-hashchange.min.js"></script>
+<script src="assets/custom/nav.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,2 @@
+#access the HDFS on adhara from rossmann
+hadoop fs -ls hftp://adhara1.stat.purdue.edu:50070/ln/tongx/

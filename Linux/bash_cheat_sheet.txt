@@ -1,0 +1,85 @@
+#Nice way to kill a process
+kill -HUP <PID>
+#Medium way to kill a process
+kill <PID>
+#Heavy way to kill a process
+kill -9 <PID>
+
+#see running processes
+ps xu
+
+##see running jobs
+jobs
+  ##bring job to foreground
+  fg %<# in brackets>
+  ##suspend job in foreground
+  ctrl-Z
+  ##reanimate in background
+  bg %<# in brackets>
+
+#see which tty is your current one
+tty
+
+#Ways to monitor resource usage on Adhara1...6
+  #subbtract cached from used to see portion used by programs.
+  free
+  ##swap in & swap out staying at 0 means no virtual memory hard disk usage
+  ##cpu idle time should be low
+  vmstat -w <refresh rate in seconds>
+  ##load average = # processes waiting for cpu or drives.  16 is full for the adhara machines.
+  uptime
+  ##hard drives begin with 'sd'.  there are 12 on every machine.
+  iostat 1
+  
+## Screen commands
+  ## begin a named session
+  screen -S <name>
+  ## rename an existing session
+  #connect to the session, then do
+  ctrl-a : sessionname <name>
+
+## set up keywordless ssh
+ssh-keygen
+cat ~/.ssh/id_dsa.pub | ssh user@remotehost 'cat >> ~/.ssh/authorized_keys'
+
+## open nautilus sftp
+nautilus sftp://USER@SERVER/PATH
+
+## unzip tar.gz file
+tar -zxvf <file.tar.gz>
+
+## convert all ps files in current folder to pdf
+find . -type f -name \*.ps -exec ps2pdf -sPAPERSIZE=legal '{}' \;
+
+## search for text within files
+grep -r "pattern" /path/to/directory
+
+## list sizes of all files and folders in current directory, one level only
+du -shc *
+
+## search for files of a given name
+## print  the full file name on the standard output, followed by a newline.
+find /path/to/folder -print -name filename
+
+## search for files of a given name
+## print  the full file name on the standard output, followed by a null character 
+## (instead of the newline character that -print uses).
+find /path/to/folder -print0 -name filename
+
+## search for files which contains specific text
+find . -type f -print0 | xargs -0 grep stuffYouWantToFind
+
+## svn 
+# 1. create an emptry new repo named "myrepo" on centauri
+ssh tongx@centauri.stat.purdue.edu
+cd /home/CVSROOT
+mkdir myrepo
+svnadmin create /home/CVSROOT/myrepo/
+# 2. check out the repo to your local machine
+svn checkout svn+ssh://tongx@centauri.stat.purdue.edu/home/CVSROOT/myrepo
+# 3. populate the repo with files and directory
+svn add myfiles
+svn add --force mydirectory
+
+##copy all directory and files to a new directory.
+find . -print | cpio -pduv /path/to/directory

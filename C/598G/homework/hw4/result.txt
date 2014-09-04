@@ -1,0 +1,41 @@
+256 X 256:
+user: 
+real	0m3.002s
+user	0m2.976s
+sys	    0m0.020s
+strassen:
+real	0m0.406s
+user	0m0.388s
+sys	    0m0.016s
+blas:
+real	0m1.168s
+user	0m0.564s
+sys	    0m0.040s
+
+512 X 512:
+user:
+real	0m30.534s
+user	0m30.318s
+sys	    0m0.068s
+blas:
+real	0m2.499s
+user	0m2.432s
+sys	    0m0.056s
+strassen:
+real	0m2.069s
+user	0m1.980s
+sys	    0m0.080s
+
+768 X 768:
+user:
+real	1m54.615s
+user	1m50.015s
+sys	    0m0.152s
+blas:
+real	0m7.146s
+user	0m7.020s
+sys	    0m0.104s
+strassen:
+real	0m7.112s
+user	0m6.544s
+sys	    0m0.184s

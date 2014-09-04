@@ -1,0 +1,19 @@
+For the question 4c,
+the execution time for MergeSort is :
+	real	0m4.598s
+	user	0m0.632s
+	sys  	0m0.264s
+the execution time for 100 times of QuickSort is :
+	real	9m53.975s
+	user	0m52.203s
+	sys	    0m26.018s
+So the average performance of QuickSort is a little better than MergeSort.
+
+
+For the question 5,
+the output for the R code would be :
+1 4 9 16 25
+Because after we print the value of x, the value of x will be re-defined between 1 to 5.
+the output for the C code would be:
+1 4 16 
+Because after we print the value of x, the value of x will be keeped into the decision statement in for statment.

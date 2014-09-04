@@ -1,0 +1,500 @@
+# Word Counts Example #
+
+## Word counts here we go ##
+Word counts example is a problem of counting the number of occurrences of each word in a large collection of documents.
+In order to achieve this goal by using RHIPE, what we are planning to do is to break up the whole document into pieces
+of single word. For every word, we assign an associated count of occurences, which is just 1 here. Then we can treat 
+this word-occurence pair as a key/value pair. A key/value pair (KVP) is an abstract data type that includes a group of 
+key identifiers and a set of associated values. Here the key is word, and the associated value is just 1. Once we have
+the collection of all (word, 1) pairs, we can group pairs that share the same word, and sum up the corresponding occurence.
+Then final output would be all unique words and total corresponding occurences.
+
+Now let us start to look at how to do this by using RHIPE package in R. First of all, we need to call the RHIPE library,
+and initialize it:
+
+```r
+library(Rhipe)
+rhinit()
+```
+
+Then we will get the text files that we want to study on. Please download your favorite Shakespeare plays from 
+http://shakespeare.mit.edu/ and save it to a text file or many files. We grab one of the Poetries, A Lover's Complaint, 
+and save into two text files. In these two text files, we remove all space lines, as well as all arbitary spaces before 
+any line. Here is how they look like:
+
+```r
+system("head ALoversComplaint01.txt")
+```
+
+```
+A Lover's Complaint
+FROM off a hill whose concave womb reworded
+A plaintful story from a sistering vale,
+My spirits to attend this double voice accorded,
+And down I laid to list the sad-tuned tale;
+Ere long espied a fickle maid full pale,
+Tearing of papers, breaking rings a-twain,
+Storming her world with sorrow's wind and rain.
+Upon her head a platted hive of straw,
+Which fortified her visage from the sun,
+```
+
+```r
+system("head ALoversComplaint02.txt")
+```
+
+```
+Are errors of the blood, none of the mind;
+Love made them not: with acture they may be,
+Where neither party is nor true nor kind:
+They sought their shame that so their shame did find;
+And so much less of shame in me remains,
+By how much of me their reproach contains.
+''Among the many that mine eyes have seen,
+Not one whose flame my heart so much as warm'd,
+Or my affection put to the smallest teen,
+Or any of my leisures ever charm'd:
+```
+Then we write two text files to the HDFS:
+
+```r
+rhput("~/ALoversComplaint01.txt", "/tmp/ALoversComplaint01.txt")
+rhput("~/ALoversComplaint02.txt", "/tmp/ALoversComplaint02.txt")
+```
+
+Text file is an acceptable file format in Mapreduce. If the type of input file in a mapreduce job is "text", RHIPE will 
+actually generate a key/value pair for every row. The key is the row index, and the value is the content of corresponding 
+line which saved as a string. 
+
+### Map ###
+
+We can first write a map function which just collect the key/value pairs from text file. Map is an R expression that is 
+evaluated by RHIPE during the map stage. For each task, RHIPE will call this expression multiple times. This can also 
+be a function of two arguments,the key and the value.
+
+```r
+map1 <- expression({
+    lapply(seq_along(map.keys), function(r){
+      rhcollect(map.keys[[r]], map.values[[r]])
+    })
+})
+```
+
+Here the map.keys and map.values are two lists which are consist of all keys and all values that will be excuted in one 
+task at one monment respectively. rhcollect is the function that collect the key/value pairs in RHIPE. After defined
+the map expression, the main function that execute mapreduce job is rhwatch(). Input and output argument in rhwatch() 
+function is used to specify the path on HDFS of input file and output file respectively, and there are three types of file
+we can consider, text, sequence, and map file. Mapred argument is a list that can be used to customize the Hadoop and RHIPE 
+options. Here we specify the mapred.reduce.tasks to be 10, so the number of reduce tasks will be set to be 10. Another 
+potential parameter in mapred is the mapred.map.tasks, which can specify the number of map tasks. However it is not 
+necessary to do this here since the input file is text. The mapred.map.tasks number is automatically decided by Hadoop 
+based on the size of text file. The map tasks number is equal to total size of text file divide by 128 Mb.
+
+```r
+mr1 <- rhwatch(
+  map = map1,
+  input = rhfmt("/tmp/ALoversComplaint01.txt", type = "text"),
+  output = rhfmt("/tmp/identity.map.output", type = "sequence"),
+  mapred = list( mapred.reduce.tasks = 10 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job1 <- rhex(mr1, async = FALSE)
+rst1 <- rhread("/tmp/identity.map.output")
+```
+
+
+
+```r
+length(rst1)
+```
+
+```
+[1] 185
+```
+
+```r
+head(rst1, 3)
+```
+
+```
+[[1]]
+[[1]][[1]]
+[1] 2190
+
+[[1]][[2]]
+[1] "And often kiss'd, and often 'gan to tear:"
+
+
+[[2]]
+[[2]][[1]]
+[1] 154
+
+[[2]][[2]]
+[1] "And down I laid to list the sad-tuned tale;"
+
+
+[[3]]
+[[3]][[1]]
+[1] 4169
+
+[[3]][[2]]
+[1] "If best were as it was, or best without."
+```
+
+The result is a list with length equals to 185, which is the number of rows in total. Each element is also a 
+list with length two. The first element is key, and the second element is value.
+We can pull out all the keys from the output object by using the following code:
+
+```r
+head(unlist(lapply(rst1, "[[", 1)), 20)
+```
+
+```
+ [1] 2190  154 4169 7769 1114 6524 1378 7560 2503 6315 5295 7855 4785  766 1288
+[16] 7200 2583 3358  105 4210
+```
+It is easy to find out that the keys are not integers from 1 to 185. RHIPE actually generates 185 different
+integers as keys. This is ok since we are more interested in the values instead of keys at this monment.
+
+The input and output of map function are both key/value pairs. In other words, the map function processes a 
+key/value pair to generate a set of intermediate key/value pairs. So we are planning to process the key/value 
+pairs we got previously into new key/value pairs which every word is the key, and the corresponding value would 
+be integer 1. In order to achieve this, we need to conduct some text processing work first. As we can see from the 
+value, there are some special character in each row of text file. We have to remove them from the string. 
+For example:
+
+```r
+value <- lapply(lapply(rst1, "[[", 2), function(r) gsub("[[:punct:]]", "", r))
+head(value, 3)
+```
+
+```
+[[1]]
+[1] "And often kissd and often gan to tear"
+
+[[2]]
+[1] "And down I laid to list the sadtuned tale"
+
+[[3]]
+[1] "If best were as it was or best without"
+```
+Then we have to split each row by space, such that we can create new key/value pair for each word. rhcollect 
+is the function in mapreduce procedure to collect the key/value pairs. For this example, we want to collect a
+key/value pair for every word in every row.
+
+```r
+map2 <- expression({
+  lapply(seq_along(map.keys), function(r) {
+    line = gsub("[[:punct:]]", "", map.values[[r]])
+    line = strsplit(line, split=" +")[[1]]
+    lapply(line, function(word) {
+      rhcollect(word, 1)
+    })
+  })
+})
+```
+
+Before we consider any reduce function, let us have a look at the result come from map function. Since reduce function is 
+optional in a mapreduce job, we can only specify the map function and then check the intermediate key/value pairs.
+
+```r
+mr2 <- rhwatch(
+  map = map2,
+  input = rhfmt("/tmp/ALoversComplaint01.txt", type = "text"),
+  output = rhfmt("/tmp/word.count.map.output", type = "sequence"),
+  mapred = list( mapred.reduce.tasks = 5 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job2 <- rhex(mr2, async = FALSE)
+rst2 <- rhread("/tmp/word.count.map.output")
+```
+
+Another way to achieve the same purpose is use the "identity.map.output" as the input file:
+
+```r
+mr2 <- rhwatch(
+  map = map2,
+  input = rhfmt("/tmp/identity.map.output", type = "sequence"),
+  output = rhfmt("/tmp/word.count.map.output", type = "sequence"),
+  mapred = list( mapred.reduce.tasks = 5 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job2 <- rhex(mr2, async = FALSE)
+rst2 <- rhread("/tmp/word.count.map.output")
+```
+
+
+The result from second job is still a list with length 1425. This is the total number of words in the text file. Each element
+is a list of key/value pair.
+
+```r
+length(rst2)
+```
+
+```
+[1] 1425
+```
+
+```r
+head(rst2, 3)
+```
+
+```
+[[1]]
+[[1]][[1]]
+[1] "I"
+
+[[1]][[2]]
+[1] 1
+
+
+[[2]]
+[[2]][[1]]
+[1] "I"
+
+[[2]][[2]]
+[1] 1
+
+
+[[3]]
+[[3]][[1]]
+[1] "I"
+
+[[3]][[2]]
+[1] 1
+```
+
+### Sorting and Shuffling ###
+
+Within previous several example code, we specify mapred.reduce.tasks parameter in mapred argument of rhwatch() function. The
+number of mapred.reduce.tasks decide how many reduce tasks will be launched. The intermediate key/value pairs produced by the 
+map function will be partitioned into mapred.reduce.tasks pieces. For a given piece, the intermediate key/value pairs are processed 
+in order. This ordering guarantee makes it easy to generate a sorted output file per piece, which is useful when the output file 
+format needs to support efficient random access lookups by key, or users of the output find it convenient to have the data sorted.
+For example, we are trying to find all key/value pairs that have "I" as key.
+
+```r
+which(unlist(lapply(rst2, "[[", 1)) == "I")
+```
+
+```
+ [1]  1  2  3  4  5  6  7  8  9 10
+```
+Obviously, all key/values with same key are ordered together. However, this automatically sorting is time consuming. If for some
+reason we want to skip this sorting process, we can achieve this by specifying the mapred.reduce.tasks to be 0.
+
+```r
+mr2 <- rhwatch(
+  map = map2,
+  input = rhfmt("/tmp/identity.map.output", type = "sequence"),
+  output = rhfmt("/tmp/word.count.map.output", type = "sequence"),
+  mapred = list( mapred.reduce.tasks = 0 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job2 <- rhex(mr2, async = FALSE)
+rst2 <- rhread("/tmp/word.count.map.output")
+which(unlist(lapply(rst2, "[[", 1)) == "I")
+```
+
+```
+ [1]   54  371  456  545  627  838 1241 1325 1345 1376
+```
+Now all key/value pairs sharing same key are scattered.
+
+### Reduce ###
+
+The last step would be including a reduce function in our mapreduce job. In RHIPE, reduce is an R expression that is evaluated 
+by RHIPE during the reduce stage, or it is a vector of expressions with names pre, reduce, and post. All key/value pairs that 
+share same key will be grouped together and processed to be applied reduce funtion. reduce.key is the shared key, and reduce.values
+is a list that includes all values corresponding to that single reduce.key. In pre session, we initialize the total count to be 0.
+In reduce session, we cumulative all reduce.values. Finally in post session, we collect the final key/value pair for each unique
+word.
+
+```r
+map3 <- expression({
+  lapply(seq_along(map.keys), function(r) {
+    line = gsub("[[:punct:]]", "", map.values[[r]])
+    line = strsplit(line, split=" +")[[1]]
+    lapply(line, function(word) {
+      rhcollect(word, 1)
+    })
+  })
+})
+reduce3 <- expression(
+  pre = {
+        count = 0
+  },
+  reduce = {
+        count = count + sum(unlist(reduce.values))
+  },
+  post = {
+        rhcollect(reduce.key, count)
+  }
+)
+```
+
+
+```r
+mr3 <- rhwatch(
+  map = map3,
+  reduce = reduce3,
+  input = rhfmt("/tmp/ALoversComplaint01.txt",type="text"),
+  output = rhfmt("/tmp/word.count.output", type="sequence"),
+  mapred = list( mapred.reduce.tasks=5 ),
+  readback = FALSE,
+  noeval = TRUE
+)
+job3 <- rhex(mr3, async = FALSE)
+rst3 <- rhread("/tmp/word.count.output")
+```
+
+
+```r
+length(rst3)
+```
+
+```
+[1] 745
+```
+
+```r
+head(rst3, 3)
+```
+
+```
+[[1]]
+[[1]][[1]]
+[1] "I"
+
+[[1]][[2]]
+[1] 10
+
+
+[[2]]
+[[2]][[1]]
+[1] "He"
+
+[[2]][[2]]
+[1] 1
+
+
+[[3]]
+[[3]][[1]]
+[1] "In"
+
+[[3]][[2]]
+[1] 3
+```
+Of course, the class of output object, which is a list, may not be convenient for further analysis in R. It is easy to convert 
+list to be a data.frame in R.
+
+```r
+data <- data.frame(key=unlist(lapply(rst3, "[[", 1)), value=unlist(lapply(rst3, "[[",2))
+head(data)
+```
+
+```  
+key value
+1   I    10
+2  He     1
+3  In     3
+4  My     2
+5  Or     3
+6  at     1
+```
+
+### Combiner ###
+
+After map function is finished, there may be significant repetition in the intermediate keys produced by each map task.
+For our example here, it is highly possible that each map task will produce hundreds or thousands of records of the form
+(the, 1). All of these counts will be sent over the network to a single reduce task and then added together by the reduce 
+function to produce one number. A better way to speed up this mapreduce job is try to eliminate the objects that need to 
+be transferred. So we can specify an optional combiner function that does partial merging of intermediate key/value pairs
+before it is sent over the network.
+
+The combiner function is executed on each machine that performs a map task. Typically the same code is used to implement 
+both the combiner and the reduce functions.
+
+```r
+mr4 <- rhwatch(
+  map = map3,
+  reduce = reduce3,
+  input = rhfmt("/tmp/ALoversComplaint01.txt",type="text"),
+  output = rhfmt("/tmp/word.count.combiner.output", type="sequence"),
+  mapred = list( mapred.reduce.tasks=5 ),
+  combiner = TRUE,
+  readback = FALSE,
+  noeval = TRUE
+)
+job4 <- rhex(mr4, async = FALSE)
+rst4 <- rhread("/tmp/word.count.combiner.output")
+```
+
+Technically, the number of input key/value pairs to reduce function is smaller when we active the combiner function. One way
+to check this is that we can go to the jobtracker webpage, one of counter named "Reduce input records" tells us how many
+input key/value pairs to the reduce function. For previous example, the "Reduce input records" counter is 1,425. When we 
+consider the combiner function, the "Reduce input records" counter is 745. So combiner function does help us to eliminate
+the number of key/value pairs to be transported from map to reduce.
+
+### Multiple input files ###
+
+It is quite common that we have more than one input files. RHIPE allows us to have a vector of path string to be input. For
+this situation, 
+
+
+```r
+mr5 <- rhwatch(
+  map = map3,
+  reduce = reduce3,
+  input = rhfmt(c("/tmp/ALoversComplaint01.txt", "/tmp/ALoversComplaint02.txt"), type="text"),
+  output = rhfmt("/tmp/word.count.total.output", type="sequence"),
+  mapred = list( mapred.reduce.tasks=5 ),
+  readback = FALSE,
+  combiner = TRUE,
+  noeval = TRUE
+)
+job5 <- rhex(mr5, async = FALSE)
+rst5 <- rhread("/tmp/word.count.total.output")
+```
+
+
+```r
+length(rst5)
+```
+
+```
+[1] 1171
+```
+
+```r
+head(rst5, 3)
+```
+
+```
+[[1]]
+[[1]][[1]]
+[1] "I"
+
+[[1]][[2]]
+[1] 20
+
+
+[[2]]
+[[2]][[1]]
+[1] "He"
+
+[[2]][[2]]
+[1] 2
+
+
+[[3]]
+[[3]][[1]]
+[1] "In"
+
+[[3]][[2]]
+[1] 8
+```
