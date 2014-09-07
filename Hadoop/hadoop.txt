@@ -29,3 +29,13 @@ export HADOOP_CLASSPATH=$HOME/hadoop/jar/MaxTemp.jar
 hadoop MaxTemperature /app/hadoop/sample.txt /app/hadoop/MaxTemp.output
 #hadoop classname /HDFS/path/to/input /HDFS/path/to/output
 
+#Hadoop error
+java.lang.Throwable: Child Error
+	at org.apache.hadoop.mapred.TaskRunner.run(TaskRunner.java:250)
+Caused by: java.io.IOException: Task process exit with nonzero status of 126.
+	at org.apache.hadoop.mapred.TaskRunner.run(TaskRunner.java:237)
+
+#Hadoop streaming
+#You can specify any executable as the mapper and/or the reducer. The executables do not need to 
+#pre-exist on the machines in the cluster; however, if they don't, you will need to use "-file" 
+#option to tell the framework to pack your executable files as a part of job submission. 

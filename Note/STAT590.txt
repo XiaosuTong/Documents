@@ -1,0 +1,31 @@
+8/26/2014
+topic:
+-Supervised learning
+-Unsupervised learning
+-Complex setting
+  Structured prediction
+  Semi-supervised
+  large scale learning
+-theory
+
+tasks
+-Classification
+  learning alg
+  decide feature representation
+    the classificaion function domain
+    captures properties of the input object
+  model/representation
+    classifier = function
+    boolean functions, linear functions(hyperplanes)
+  optimization/learning algorithm
+-Regression
+  similar to classification except real values labels
+-Clustering
+  belongs unsupervised learning
+-Structured Prediction
+  mapping between complex objects
+  face detector: combines eyes, nose and mouth detectors
+  define constraints, make decision jointly
+-Reinforcement learning
+  most natural machine learning setting
+  goal: take a sequence of actions to maximize rewards
