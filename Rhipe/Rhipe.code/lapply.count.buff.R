@@ -39,16 +39,16 @@ rst1 = rhread("/ln/tongx/userhipe/lapply.distribute")
 ## buffer size will play a role here
 ## number of map tasks or number of input splits = 3
 #############################################
-## map-reduce
+## map buffer
 map = expression({
         rhcollect(map.keys, map.values)
 })
 mr = rhwatch(
         map = map,
 	input = c(9003,3),
-        output = rhfmt("/ln/tongx/userhipe/lapply.buff3000", type="sequence"),
+        output = rhfmt("/ln/tongx/userhipe/lapply.buff10000", type="sequence"),
 	readback = FALSE,
-	mapred = list(mapred.reduce.tasks = 10),
+	mapred = list(mapred.reduce.tasks = 10, rhipe_map_buff_size = 10000),
         #inout = c('lapply','sequence'),
         #N = 10000,
         #mapred = list( mapred.map.tasks=3, mapred.reduce.tasks=0 )
@@ -56,12 +56,38 @@ mr = rhwatch(
 #ex = rhex(mr, async=FALSE)
 
 ## read in output
-rst2 = rhread("/ln/tongx/userhipe/lapply.buff3000")
+rst2 = rhread("/ln/tongx/userhipe/lapply.buff10000")
 
 ## how many keys/values in each map.keys/map.values
 ## default buffer size is 3000
-## each map task can only handel 3000 key/value pairs as maximum
+## each map task can only handel 3000 key/value pairs as maximum at one time
 ## The part that over factor of 3000 will also equally distributed
+
+##reduce buffer
+map = expression({
+    lapply(seq_along(map.keys), function(r){
+        rhcollect(1, map.values[[r]])
+    })
+})
+reduce = expression(
+	pre = {
+	},
+	reduce = {
+	  rhcollect(reduce.key, reduce.values)
+	},
+	post = {
+	}
+)
+mr = rhwatch(
+        map = map,
+	reduce = reduce,
+        input = c(4000,3),
+        output = rhfmt("/ln/tongx/userhipe/lapply.reducebuff3000", type="sequence"),
+        readback = FALSE,
+        mapred = list(mapred.reduce.tasks = 10, rhipe_map_buff_size = 4000),
+)
+##reduce default buffer size is 3000, each reduce task can handle 3000 key/value pairs at one time
+##but since all key/value pairs are with same key, them all will be partitioned into one part-r- file
 
 #############################################
 ## scale up "sequence" input 
@@ -88,19 +114,18 @@ mr = rhwatch(
         mapred = list(mapred.map.task = 3, mapred.reduce.tasks = 10),
         #inout = c('lapply','sequence'),
         #N = 10000,
-        #mapred = list( mapred.map.tasks=3, mapred.reduce.tasks=0 )
 )
-
+rst <- rhread("/ln/tongx/userhipe/sequence.buff")
 ## For sequence data, the buff size is same as lapply for map.keys/map.values pairs,
 ## which is 3000 key/value pairs for one map.keys/map.values.
-## This means each reducer is setted to only handle 3000 key/value paris max.
+## This means each mapper is setted to only handle 3000 key/value paris max at one time.
+## Here only has one map.task, even though we set to be 3.
 
 
 ################################################
 ## how different values with same key distributed
 ## it can happen that different values with same key
-## could be distributed to different tasks, which 
-## means on different machines
+## could not be partitioned into different parts.
 ##################################################
 b <- lapply(rep(1:2,c(3500,500)), function(x){list(x, runif(1))})
 
@@ -108,7 +133,9 @@ rhwrite(b, "/ln/tongx/userhipe/partition.buff")
 print(object.size(b), units="Mb")
 
 map = expression({
-        rhcollect(map.keys, map.values)
+    lapply(seq_along(map.keys), function(r){
+        rhcollect(map.keys[[r]], map.values[[r]])
+    })
 })
 
 mr = rhwatch(
@@ -117,14 +144,14 @@ mr = rhwatch(
         output = rhfmt("/ln/tongx/userhipe/sequence.buff.2", type="sequence"),
         readback = FALSE,
         mapred = list(mapred.reduce.tasks = 10),
-        #inout = c('lapply','sequence'),
-        #N = 10000,
-        #mapred = list( mapred.map.tasks=3, mapred.reduce.tasks=0 )
 )
 
-rst <- rhread("/ln/tongx/userhipe/sequence.buff.2")
-do.call("c", lapply(rst, "[[", 1)[[1]])
-do.call("c", lapply(rst, "[[", 1)[[2]])
+rst2 <- rhread("/ln/tongx/userhipe/sequence.buff.2")
+
+## all values related to one key will be partitioned into one part.
+## even thought mapred.reduce.tasks = 10, there only are two part-r- files size
+## is larger than 94, since we have two keys
+
 
 ###########################################
 ## It is true that after the map function, 
@@ -157,3 +184,4 @@ mr = rhwatch(
 rst <- rhread("/ln/tongx/userhipe/partition.output")
 do.call("c", lapply(rst, "[[",1))
 ## found that after the map function all keys have been ordered already!!
+##But if mapred.reduce.tasks = 0, then no sorting!

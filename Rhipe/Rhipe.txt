@@ -38,7 +38,7 @@ The map is an R expression (created using the R command expression) that is eval
 RHIPE during the map stage. For each task, RHIPE will call this expression multiple times. 
 If a task consists of W key,value pairs, the expression map will be called 
 \(\lceil \frac{W}{ \text{rhipe\_map\_buffsize}} \rceil\) times. The default value of 
-rhipe_map_buff_size is 10,000 and is user configurable. Each time map is called, the vectors 
+rhipe_map_buff_size is 3,000 and is user configurable. Each time map is called, the vectors 
 map.keys and map.values contain rhipe_map_buff_size keys and values respectively. If the objects
 are large it advisable to reduce the size of rhipe_map_buff_size . See the Airline examples where
 the value was set to 10 (each value was 5000x8 data frame).
