@@ -39,7 +39,7 @@ RHIPE during the map stage. For each task, RHIPE will call this expression multi
 If a task consists of W key,value pairs, the expression map will be called 
 \(\lceil \frac{W}{ \text{rhipe\_map\_buffsize}} \rceil\) times. The default value of 
 rhipe_map_buff_size is 10,000 and is user configurable. Each time map is called, the vectors 
-map.keys and map.values contain rhipe_map_buffsize keys and values respectively. If the objects
+map.keys and map.values contain rhipe_map_buff_size keys and values respectively. If the objects
 are large it advisable to reduce the size of rhipe_map_buff_size . See the Airline examples where
 the value was set to 10 (each value was 5000x8 data frame).
 
@@ -48,7 +48,7 @@ Each Reduce task is a partition of the intermediate keys produced as the output 
 The above code is run for every Reduce task. RHIPE implements the above algorithm by calling the 
 R expression reduce$pre at line 3. In this expression, the user will have the new key present in 
 reduce.key. After which RHIPE will call reduce$reduce several times until the condition in line 4 
-is false. Each time reduce\$reduce is called, the vector reduce.values will contain a subset of 
+is false. Each time reduce$reduce is called, the vector reduce.values will contain a subset of 
 the intermediate map values associated with reduce.key. The length of this vector is a default 
 10,000 but can be changed via the rhipe_reduce_buff_size option. Finally when all values have been
 processed, RHIPE calls reduce$post at line 7. At this stage, all intermediate values have been sent 

@@ -39,3 +39,17 @@ Caused by: java.io.IOException: Task process exit with nonzero status of 126.
 #You can specify any executable as the mapper and/or the reducer. The executables do not need to 
 #pre-exist on the machines in the cluster; however, if they don't, you will need to use "-file" 
 #option to tell the framework to pack your executable files as a part of job submission. 
+hadoop jar contrib/streaming/hadoop-*streaming*.jar \
+-file /home/hduser/mapper.py    -mapper /home/hduser/mapper.py \
+-file /home/hduser/reducer.py   -reducer /home/hduser/reducer.py \
+-input /user/hduser/gutenberg/* -output /user/hduser/gutenberg-output
+
+#Mapper parameter
+#A record emitted from a map will be serialized into a buffer and metadata will be stored into 
+#accounting buffers. As described in the following options, when either the serialization buffer 
+#or the metadata exceed a threshold, the contents of the buffers will be sorted and written to 
+#disk in the background while the map continues to output records. If either buffer fills completely
+#while the spill is in progress, the map thread will block. When the map is finished, any remaining 
+#records are written to disk and all on-disk segments are merged into a single file. Minimizing 
+#the number of spills to disk can decrease map time, but a larger buffer also decreases the memory 
+#available to the mapper.
