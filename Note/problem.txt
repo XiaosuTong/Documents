@@ -1,0 +1,9 @@
+1. on rossmann
+have issue with installation of rJava in R. Need all java config information
+
+2. on hathi
+R command is not working for students, as well as rstudio
+
+3. on gacrux
+Rhipe is not working on gacrux, but works on adhara1-6. something related to 
+rJava. 
