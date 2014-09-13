@@ -3,6 +3,12 @@ have issue with installation of rJava in R. Need all java config information
 
 2. on hathi
 R command is not working for students, as well as rstudio
+#problem solved, add 
+#module load rstudio
+#module load r/3.1.0
+
+hadoop fs -ls / does not working
+ls: Call From hathi-fe00.rcac.purdue.edu/128.211.140.72 to hathi-adm.rcac.purdue.edu:8020 failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http://wiki.apache.org/hadoop/ConnectionRefused
 
 3. on gacrux
 Rhipe is not working on gacrux, but works on adhara1-6. something related to 
