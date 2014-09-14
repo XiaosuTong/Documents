@@ -68,12 +68,14 @@ how many maptasks are run in input arguement. Here is a trick, we definitely
 can specify any number of maptasks in lapply input, however, the blocks 
 effect still exist. For instance, if we are planning to create a data with 
 1GB, each subset is 16MB, so totally we have 2^6 subset. If we specify the 
-input=c(2^6, 6), there will be just 6 maptasks. However, if we use the output 
-of this map only mapreduce job to be an input for another mapreduce job, the 
-number of maptasks will be 1GB/128MB=8. This means even though we just defined
-6 maptasks, there is actually 8 maptasks. On the other hand, if we specify 
-the input=c(2^6, 10), which means we specify more maptasks number than it need,
-same as 6, there will be 8 maptasks for furture mapreduce.
+input=c(2^6, 6), there will be just 6 maptasks, and we specify the # of reduce
+to anything we like, e.g. 1. However, if we use the output of this map only 
+mapreduce job to be an input for another mapreduce job, the number of maptasks 
+will be 1GB/128MB=8 instead of 1. This means even though we only have 1 partition
+from the first job, there is actually 8 maptasks for second job. On the other 
+hand, if we specify the input=c(2^6, 6), and mapred.reduce.tasks=10, which means 
+we specify more maptasks number than it need, same as 1, there will be 8 maptasks
+for furture mapreduce.
 
 
 ##What is syc points?

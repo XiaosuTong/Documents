@@ -14,14 +14,12 @@ map <- expression({
 mr <- rhwatch(
         map = map,
         input = c(2^6,6), ##64 subsets to make sure the total size is 1Gb
-	##You can specify as many # of map tasks as you want, this only control how many 
-	##slots will be used to run the map tasks. Here 6 is smaller than 8, which means
-    ##two of slots will run multiple tasks.
+	    ## There is no buff.size issue, since the input to the map function 
+        ## are just 1 to N for key, and 1 to N for value. And the  buff.count is
+        ## not a problem here.
         output = rhfmt("/ln/tongx/userhipe/size1GB.each16MB", type="sequence"),
 	jobname = "size.buff",
         readback = FALSE	
-        #inout = c('lapply','sequence'),
-        #N = 10,
         #mapred = list( mapred.map.tasks=3, mapred.reduce.tasks=0 )
 )
 
@@ -33,8 +31,8 @@ print(object.size(a[[1]][[2]]), units="Mb")
 
 
 ## map-reduce to see number of keys/values in each map.keys/map.values in dataset1
-## the number of map.keys/map.values is the max # of key/value pairs that one node
-## allowed to handel 
+## the number of map.keys/map.values is the max # of key/value pairs that one task
+## allowed to handel at one moment.
 map <- expression({
         rhcollect(unlist(map.keys), length(map.values))
 })
