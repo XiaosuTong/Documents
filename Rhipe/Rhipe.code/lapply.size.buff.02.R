@@ -83,24 +83,4 @@ mr <- rhwatch(
     mapred = list(mapred.reduce.tasks = 1, rhipe_map_buff_size = 1)
 )
 
-#want to understand rhipe_reduce_full_size argument. Failed
-map <- expression({
-    lapply(seq_along(map.keys), function(r){
-        rhcollect(1, map.values[[r]])
-    })
-})
-reduce <- expression(
-    reduce = {
-        rhcollect(reduce.key, reduce.values)
-    }
-)
-mr <- rhwatch(
-    map = map,
-    reduce = reduce,
-    input = c(2000, 3),
-    output = rhfmt("/wsc/tongx/tmp/map.buff", type="sequence"),
-    readback = FALSE,
-    mapred = list(mapred.reduce.tasks = 1, rhipe_reduce_full_size = 500)
-)
-
  

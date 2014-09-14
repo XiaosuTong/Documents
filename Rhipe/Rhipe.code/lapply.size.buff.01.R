@@ -15,7 +15,8 @@ mr <- rhwatch(
         map = map,
         input = c(2^6,6), ##64 subsets to make sure the total size is 1Gb
 	##You can specify as many # of map tasks as you want, this only control how many 
-	##nodes will be used to run the map tasks.
+	##slots will be used to run the map tasks. Here 6 is smaller than 8, which means
+    ##two of slots will run multiple tasks.
         output = rhfmt("/ln/tongx/userhipe/size1GB.each16MB", type="sequence"),
 	jobname = "size.buff",
         readback = FALSE	
