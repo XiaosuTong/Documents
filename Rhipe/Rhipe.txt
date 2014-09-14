@@ -6,6 +6,21 @@ http://localhost:50030
 ssh -L50030:hadoop-01:50030 rossmann-wsc.rcac.purdue.edu
 http://localhost:50030
 
+##RHIPE Options
+rhipe_stream_buffer
+  The size of the STDIN buffer used to write data to the R process(in bytes) 
+  default: 10*1024 bytes
+mapred.textoutputformat.separator
+  The text that seperates the key from value when inout[2] equals text. default: Tab
+mapred.field.separator
+  The text that seperates fields when inout[2] equals text. default: Space
+rhipe_reduce_buff_size
+  The maximum length of reduce.values default: 10,000
+rhipe_map_buff_size
+  The maximum length of map.values (and map.keys) default: 10,000
+
+
+
 ##Block size for sequence files
 Btw, if you have sequence files as input you can force the map tasks to be large,
 by setting the block size to be small e.g. 
