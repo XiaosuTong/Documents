@@ -6,6 +6,14 @@ http://localhost:50030
 ssh -L50030:hadoop-01:50030 rossmann-wsc.rcac.purdue.edu
 http://localhost:50030
 
+##What is RhipeLib.tar.gz on HDFS?
+It is an R distribution loaded with every shared lib file I could find via code that 
+a package R has installed might have used. Rhipe itself is basically a Java program 
+that calls a C program that is an R interpreter that loads R packages which all have 
+random dependencies that must locatable during a Hadoop run. Hadoop itself has a concept 
+of a shared cache file that is expected to be a tar.gz, and Rhipe uses that shared cache 
+capability.
+
 ##RHIPE Options
 rhipe_stream_buffer
   The size of the STDIN buffer used to write data to the R process(in bytes) 
