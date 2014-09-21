@@ -19,7 +19,8 @@ rhipe_reduce_buff_size
 rhipe_map_buff_size
   The maximum length of map.values (and map.keys) default: 10,000
 
-
+##get the file name being processed
+Sys.getenv("mapred.input.file")
 
 ##Block size for sequence files
 Btw, if you have sequence files as input you can force the map tasks to be large,
