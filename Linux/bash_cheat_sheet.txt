@@ -83,3 +83,6 @@ svn add --force mydirectory
 
 ##copy all directory and files to a new directory.
 find . -print | cpio -pduv /path/to/directory
+
+##software manager
+rpm -qi softwarename
