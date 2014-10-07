@@ -30,6 +30,24 @@ rhipe_map_buff_size
 ##get the file name being processed
 Sys.getenv("mapred.input.file")
 
+##Why RHIPE can write any sized object but cannot read key,values 
+##that are more than 256MB?
+1.Here 256Mb is the limit for a key/value pair that has already been on HDFS and
+will be an input sequence file to another mapreduce job. When we created
+this key/value pair as sequence file, we can create(write) any size. But
+when we try to use(read) it as input sequence file, we will get error like:
+"Error: PB ERROR[LOGLEVEL_ERROR](google/protobuf/io/coded_stream.cc:156) 
+A protocol message was rejected because it was too big (more than 268435456 bytes).  
+To increase the limit (or to disable these warnings), 
+see CodedInputStream::SetTotalBytesLimit() in google/protobuf/io/coded_stream.h."
+2.There is another type of read limit is the limit of key/value pair size when
+we call rhread(). So far I have tested on adhara, when one key/value pair is 128MB,
+we will get error:
+Error in .jcall("RJavaTools", "Ljava/lang/Object;", "invokeMethod", cl,  : 
+  java.lang.OutOfMemoryError: Java heap space
+The way to solve this issue is call:options(java.parameters = "-Xmx1000m") before
+call library(Rhipe)
+
 ##Block size for sequence files
 Btw, if you have sequence files as input you can force the map tasks to be large,
 by setting the block size to be small e.g. 

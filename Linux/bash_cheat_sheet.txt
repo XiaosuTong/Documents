@@ -86,3 +86,6 @@ find . -print | cpio -pduv /path/to/directory
 
 ##software manager
 rpm -qi softwarename
+
+##find all environment config for a specific thing
+env | grep JAVA
