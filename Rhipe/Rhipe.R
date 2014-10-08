@@ -7,7 +7,7 @@
 #For each piece, we run a logistic regression, and then we average
 #each coefficient over R subsets.
 ##################################################################
-account <- "youracount"
+account <- "tongx"
 N <- 2^20
 R <- 2^10
 p <- 2^3 - 1
@@ -25,13 +25,11 @@ map1 <- expression({
 job1 <- rhwatch(
 	map = map1,
 	input = c(R, 20),
-	output = rhfmt(file.path("/ln", account, "glm", "data"), type="sequence"),
+	output = rhfmt(file.path("/app/hadoop", "glm", "data"), type="sequence"),
 	jobname = "Generating data",
 	readback = FALSE,
-	parameters = list(N = N, R = R, p = p),
-	noeval = TRUE
+	parameters = list(N = N, R = R, p = p)
 )
-ex = rhex(job1, async=FALSE)
 
 ##glm.fit and average coefficients
 map2 <- expression({

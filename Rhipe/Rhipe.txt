@@ -1,3 +1,8 @@
+##Install Rhipe on local single core machine
+sudo ln -s protobuf-2.4.1/lib/lib* /usr/local/lib/ 
+#this is building link of protobuf shared lib files to the searching path where R search for shared lib
+R CMD INSTALL Rhipe/Rhipe_0.74.0.tar.gz
+
 ##Access jobtracker on adhara
 ssh -L50030:adhara1:50030 shaula.stat.purdue.edu
 http://localhost:50030
