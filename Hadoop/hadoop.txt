@@ -1,4 +1,19 @@
-#list the blocks that make up each file in the filesystem
+#Versions of Hadoop
+Hadoop Distribution | Version Number | Distribution Name | Vendor Abbreviation | Deployment Type | HVE Support?
+Apache                1.2.1            apache              Apache                Tarball           Yes
+Greenplum HD          1.2              gphd                GPHD                  Tarball           Yes
+Pivotal HD            1.0              phd                 PHD                   Tarball or Yum    Yes
+Hortonworks 
+Data Platform         1.3              hdp                 HDP                   Tarball           Yes
+Cloudera CDH3 
+Update 5 or 6         3.5.0 or 3.6.0   cdh3                CDH                   Tarball           No
+Cloudera CDH4.3 
+MapReduce v1          4.3.0            cdh4                CDH                   Yum               No
+Cloudera CDH4.3 
+MapReduce v2          4.3.0            cdh4                CDH                   Yum               No
+MapR                  2.1.3            mapr                MAPR                  Yum               No
+ 
+#what is the blocks that make up each file in the filesystem
 hadoop fsck / -files -blocks
 
 #How to complete a mapreduce job
