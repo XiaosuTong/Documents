@@ -1,0 +1,11 @@
+Hashing is the process of converting some large amount of data into a much smaller amount (typically
+a single integer) in a repeatable way so that it can be looked up in a table in constant-time (O(1)), 
+which is important for high-performance algorithms and data structures.
+
+Immutability is the idea that an object will not change in some important way after it has been 
+created, especially in any way that might change the hash value of that object.
+
+The two ideas are related because objects which are used as hash keys must typically be immutable so 
+their hash value doesn't change. If it was allowed to change then the location of that object in a 
+data structure such as a hashtable would change and then the whole purpose of hashing for efficiency 
+is defeated.
