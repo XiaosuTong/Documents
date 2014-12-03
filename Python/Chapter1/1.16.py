@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-mylist = [1,4,-5,10,-7,2,3,-1, 'N/A']
+mylist = [1,4,-5,10,-7,2,3,-1]
 #generator expressions
 pos =(n for n in mylist if n > 0)
 #iterator expressions
