@@ -1,16 +1,43 @@
+###########################################
 ##Install Rhipe on local single core machine
+#install javajdk7, java library will be located in /usr/lib/jvm
+sudo apt-get install openjdk-7-jdk
+#if multiple java version is available, managing java and java compiler as following
+sudo update-alternatives --config java
+sudo update-alternatives --config javac
+#set Java configuration in .bashrc
+export JAVA_LD_LIBRARY_PATH=/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server
+export JAVA=/usr/lib/jvm/java-1.7.0-openjdk-amd64/jre/bin/java
+export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-amd64
+export JAVAC=/usr/lib/jvm/java-1.7.0-openjdk-amd64/bin/javac
+export JAVAH=/usr/lib/jvm/java-1.7.0-openjdk-amd64/bin/javah
+export JAVA_CPPFLAGS="-I/usr/lib/jvm/java-1.7.0-openjdk-amd64/include"
+export JAVA_LIBS="-L/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server -ljvm"
+export JAR=/usr/lib/jvm/java-1.7.0-openjdk-amd64/bin/jar
+
+
+#####################
+#install protobuffer
+#set a link of protobuf for R. This is building link of protobuf shared 
+#lib files to the searching path where R search for shared lib
 sudo ln -s protobuf-2.4.1/lib/lib* /usr/local/lib/ 
-#this is building link of protobuf shared lib files to the searching path where R search for shared lib
+#install Rhipe package
 R CMD INSTALL Rhipe/Rhipe_0.74.0.tar.gz
 
+
+###########################
 ##Access jobtracker on adhara
 ssh -L50030:adhara1:50030 shaula.stat.purdue.edu
 http://localhost:50030
 
+
+################
 ##Access jobtracker on rossmann
 ssh -L50030:hadoop-01:50030 rossmann-wsc.rcac.purdue.edu
 http://localhost:50030
 
+
+##################
 ##What is RhipeLib.tar.gz on HDFS?
 It is an R distribution loaded with every shared lib file I could find via code that 
 a package R has installed might have used. Rhipe itself is basically a Java program 
@@ -19,6 +46,8 @@ random dependencies that must locatable during a Hadoop run. Hadoop itself has a
 of a shared cache file that is expected to be a tar.gz, and Rhipe uses that shared cache 
 capability.
 
+
+#################
 ##RHIPE Options
 rhipe_stream_buffer
   The size of the STDIN buffer used to write data to the R process(in bytes) 
@@ -32,9 +61,13 @@ rhipe_reduce_buff_size
 rhipe_map_buff_size
   The maximum length of map.values (and map.keys) default: 10,000
 
+
+##################
 ##get the file name being processed
 Sys.getenv("mapred.input.file")
 
+
+#####################
 ##Why RHIPE can write any sized object but cannot read key,values 
 ##that are more than 256MB?
 1.Here 256Mb is the limit for a key/value pair that has already been on HDFS and
@@ -53,12 +86,15 @@ Error in .jcall("RJavaTools", "Ljava/lang/Object;", "invokeMethod", cl,  :
 The way to solve this issue is call:options(java.parameters = "-Xmx1000m") before
 call library(Rhipe)
 
+
+#####################
 ##Block size for sequence files
 Btw, if you have sequence files as input you can force the map tasks to be large,
 by setting the block size to be small e.g. 
 rhwatch(..., mapred=list(mapred.max.split.size = numInBytes)) ...
 
 
+##########
 ##rhclean
 Each time we run a map-reduce job, a temporary is created under /tmp on the 
 HDFS. These tmp files are not deleted unless you call rhclean() with default 
@@ -67,19 +103,27 @@ permission setup on our cluster is such that a user is not allowed to delete
 another user's file/directory. We can create a temp folder in your user folder 
 and set HADOOP.TMP.FOLDER to that.
 
+
+####################
 ##Why we will have tmp file for each map-reduce job
 temp files are created if params are used, or if references to globals values 
 are detected. temp files are also created if output is missing (a temp output 
 folder is created).
 
+
+##################
 ##What is the difference between mappers/reducers and maptasks/reducetasks?
 mappers/reducers have no clear defination, but they usually refers to the 
 core that are running map tasks or reduce tasks.
 
+
+###################
 ##What is map/reduce task capacity?
 The number of tasks can be executed at the one moment. For instance, on adhere
 the map/reduce task capacity is 72. This can be set by "mapred.tasktracker.map.tasks.maximum".
 
+
+######
 ##Map
 The map is an R expression (created using the R command expression) that is evaluated by 
 RHIPE during the map stage. For each task, RHIPE will call this expression multiple times. 
@@ -90,6 +134,8 @@ map.keys and map.values contain rhipe_map_buff_size keys and values respectively
 are large it advisable to reduce the size of rhipe_map_buff_size . See the Airline examples where
 the value was set to 10 (each value was 5000x8 data frame).
 
+
+###########
 ##Reduce
 Each Reduce task is a partition of the intermediate keys produced as the output of the Map phase. 
 The above code is run for every Reduce task. RHIPE implements the above algorithm by calling the 
@@ -107,6 +153,8 @@ a MapFile. To turn of sorting and shuffling and instead write the map output to 
 set mapred.reduce.tasks to zero in mapred. In this case, the output keys are not sorted and the output
 format should not be map
 
+
+################
 ##What determines how many maptasks/reducetasks are run?
 For input like "sequence" and "text", the number of maptasks is determined 
 by the number of blocks of the data. The default size of one block in HDFS 
@@ -125,6 +173,7 @@ we specify more maptasks number than it need, same as 1, there will be 8 maptask
 for furture mapreduce.
 
 
+##################
 ##What is syc points?
 The block size of the files in HDFS is 128MB. The HDFS will cut the files to 
 blocks based on this size, like put a bar right at the 128MB end. At the same
@@ -140,12 +189,15 @@ block until the last key/value pair end. So the cut off point for each maptask
 is like min(first syc point, structure bound). 
 
 
+#########################
 ##How are KV pairs assigned to mappers/reducers?
 The map argument is an R expression. Hadoop will read key,value pairs, send 
 them to RHIPE which in turn buffers them by storing them in a R list: map.values 
 and map.keys respectively. Once the buffer is full, RHIPE calls the map expression. 
 The default length of map.values (and map.keys) is 10,000
 
+
+########################
 ##Number of tasks per node
 "mapred.tasktracker.map.tasks.maximum" deals with the number of map tasks 
 that should be launched on each node, not the number of nodes to be used 
@@ -156,6 +208,7 @@ the number of map tasks to be executed per node. The range of
 "mapred.tasktracker.map.tasks.maximum" is from 1/2*cores/node to 2*cores/node.
 
 
+#########################
 ##Is it possible that multiple nodes working on the same task?
 It should be asked that is it possible that multiple cores working on the same
 task. Task is the small unit for a Mapreduce to execute. If the task is above
@@ -174,6 +227,7 @@ start to execute the task, whichever finish first, the other one will be killed,
 all temporary files will be deleted.
 
 
+#############################
 ##What is the difference between job and task?
 A mapreduce code together is called a job. Jobtracker will give us an idea that
 how many percent of the job has been finished.
@@ -187,6 +241,7 @@ datanode are from HDFS aspect, tasktracker and jobtracker are from mapreduce
 aspect. 
 
 
+#########################
 ##What is jobtracker?
 The JobTracker is the service within Hadoop that farms out MapReduce tasks 
 to specific nodes in the cluster, ideally the nodes that have the data, or at 
@@ -206,6 +261,7 @@ least are in the same rack.
 8. Client applications can poll the JobTracker for information. 
 
 
+#####################
 ##What is tasktracker?
 A TaskTracker is a node in the cluster that accepts tasks - Map, Reduce and Shuffle 
 operations - from a JobTracker.
@@ -224,6 +280,7 @@ of the number of available slots, so the JobTracker can stay up to date with whe
 the cluster work can be delegated. 
 
 
+#################################
 ##What if there is a large number of values associated with one key?
 In the RHIPE, there is a limit for number of key/value pairs belong to one
 map.keys/map.values pair. This means the buff size for map.keys/map.values
@@ -247,6 +304,7 @@ pre, reduce, and post to combine results for same key from different
 reduce.keys/reduce.values pairs.
 
 
+###########################
 ##Is map.keys/map.values the package worked on one node or on one core?
 On one core for sure. map.keys/map.values are the execution objects for one core.
 If the number of key/value pairs are smaller than 3000 in that map.keys/map.values
@@ -254,3 +312,46 @@ package, then this map.keys/map.values pair will be executed on the core at one 
 On the other hand, if the number of key/value pairs are more than 3000 in that 
 map.keys/map.values pair, then those key/value pairs will be executed on the same 
 core at different execution iterative time.
+
+
+##########################
+## What is secondary namenode?
+The namenode stores the HDFS filesystem information in a file named fsimage. 
+Updates to the file system (add/remove blocks) are not updating the fsimage file, 
+but instead are logged into a file, so the I/O is fast append only streaming as 
+opposed to random file writes. When restaring, the namenode reads the fsimage 
+and then applies all the changes from the log file to bring the filesystem 
+state up to date in memory. This process takes time.
+The secondarynamenode job is not to be a secondary to the name node, but only to 
+periodically read the filesystem changes log and apply them into the fsimage file, 
+thus bringing it up to date. This allows the namenode to start up faster next time. 
+
+
+##################
+## Shuffle and sort
+Each map task has a circular memory buffer that it writes the output to. The buffer
+is 100 Mb by default, a size that can be tuned by changing the io.sort.mb property.
+When contents of the buffer reaches a certain threshold size (io.osrt.spill.percent,
+which has the default 0.80), a background thread will start to SPILL the contents to 
+disk. Map outputs will continue to be written to the buffer while the spill taskes
+place, but if the buffer fills up during this time, the map will block util the spill
+is complete.
+
+SPILL are written to the directories specified by the mapred.local.dir property.
+
+Before SPILL writes to disk, the thread first divides the data into partitions corresponding
+to the reducers. Within each partition, the background thread performs an in-memory
+sort by key, and if there is a combiner function, it is run on the output of the sort.
+
+Each time the memor buffer reaches the spill threshold, a new spill file is created,
+so there could be several spill files. Each spill files have same partitions number
+and each partition has been sorted. Before the task is finished, the spill files are
+merged into a single partitioned and sorted output file.
+
+If there are at least three spill files, the combiner is run again before the output 
+file is written. If there are only one or two spill files, no need for the overhead
+in invoking the combiner.
+
+It is often good to compress the map output as it is written to disk. By default, the
+output is not compressed, but it is easy to enable this by mapred.compress.map.output 
+to be TRUE.
