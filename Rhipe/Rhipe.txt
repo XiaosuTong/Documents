@@ -314,6 +314,26 @@ map.keys/map.values pair, then those key/value pairs will be executed on the sam
 core at different execution iterative time.
 
 
+####################
+## What is namenode?
+THe namenode manages the filesystem namespace. It maintains the filesystem tree
+and the metadata for all the files and directories in the tree. THis information is
+stored persistently on local disk in the form of two files: namespace image and edit
+log. Namenode also knows the datanodes on which all the blocks for a given file are
+located, but it does not store block locations persistently.
+Under federation, each namenode manage a namespace volume, which is made up of the 
+metadata for the namespace and a block pool containing all the blocks for the files
+in the namespace. Namespace volumes are independent of each other. However datanodes
+register with each namenode in the cluster and store blocks from multiple block pools.
+
+
+#####################
+## What is datanode?
+Datanodes are the workhorses of the HDFS. The store and retrieve blocks when they
+are told, and they report back to the namenode periodically with lists of blocks
+that they are storing.
+
+
 ##########################
 ## What is secondary namenode?
 The namenode stores the HDFS filesystem information in a file named fsimage. 
@@ -325,6 +345,40 @@ state up to date in memory. This process takes time.
 The secondarynamenode job is not to be a secondary to the name node, but only to 
 periodically read the filesystem changes log and apply them into the fsimage file, 
 thus bringing it up to date. This allows the namenode to start up faster next time. 
+
+
+##################################
+## How file read happened on HDFS
+The client call open() on FileSystem object, which for HDFS is an instance of 
+DistributedFileSystem. This DistributedFileSystem object will call the namenode.
+For each block the namenode returns the addresses of the datanodes that have a copy 
+of that block. Furthermore, the datanodes are sorted according to their distance to 
+the client. DistributedFileSystem will return an FSDataInputStream object to the 
+client for it to read data from. FSDataInputStream in turn creates a DFSInputStream
+object.
+
+Then client will call read(), DFSInputStream, which stored the datanode addresses,
+connects to the first datanode for the first block. When the end of the block is
+reached, DFSInputStream will close the connection to the datanode, then find the next
+best datanode for the next block. DFSInputStream also will call the namenode to 
+retrieve the datanode locations for the next batch of blocks as needed.
+
+
+##################################
+## How file write happened on HDFS
+THe client call create() on DistributedFileSystem object, DistributedFileSystem then call
+the namenode to create a new file in the filesystem's namespace with no blocks associated 
+with it. DistributedFileSystem will return an FSDataOutputStream, then it will in turn
+creates a DFSOutputStream object.
+
+DFSOutputStream splits the wroten data into packets, and writes them to data queue. The
+data queue is consumed by the DataStreamer which is responsible for asking the namenode
+to allocate new blocks by pocking a list of suitale datanodes to store the replicas.
+The list of datanodes forms a pipeline. The DataStreamer streams the packets to the first
+datanode in the pipeline, which stores the packet and forwards it to the second datanode
+in the pipeline. DFSOutputStream also maintains a ask queue of packets that are waiting 
+to be acknowledged by datanodes. A packet is removed from the ask queue only when it has
+been wroten to all datanodes in the pipeline.
 
 
 ##################
@@ -355,3 +409,46 @@ in invoking the combiner.
 It is often good to compress the map output as it is written to disk. By default, the
 output is not compressed, but it is easy to enable this by mapred.compress.map.output 
 to be TRUE.
+
+The reduce task needs the map output for its particular partition from several map tasks
+across the cluster. The map tasks may finish at different times, so the reduce task starts
+copying their outputs as soon as each completes, this known as the [COPY PHASE] of the reduce
+task.
+
+The map outputs are copied to the reduce task JVM's memory if therea re small enough,
+otherwise, they are copied to disk of tasktracker of reduce. When the in-memory buffer
+reaches a threshold size or reaches a threshold number of map outputs, it is merged and spilled
+to disk of tasktracker of reduce.
+
+When all the map outputs have been copied, the reduce task moves into the [SORT PHASE]
+which should properly be called the [MERGE PHASE] as the sorting was carried out on the
+map side. This phase merges the the same partitions from different map task outputs, maintaining
+their sort ordering. This is done in rounds, which is also true in RHIPE, that the 
+reduce-reduce will be run multiple times.
+
+The output of reduce phase is written diretly to the HDFS. Because the tasktracker node is 
+also running a datanode, the first block replica will be written to the local disk.
+
+The default mapreduce job will sort input records by their keys, which called partial sort.
+If we want to produce a globally sorted file, the naive ansewer is to use a single partition.
+But this is too inefficient. Instead, we can use a partitioner that respects the total order.
+For example, if we have four partitions, we could put keys for less than -10 in the first 
+partition, those -10 < keys < 0 in the second, those 0 < keys < 10 in the rhird, and over 10
+in the fourth. But we have to choose the partition sizes carefully to ensure that they are 
+fairly even. It is possible to get a fairly even set of partitions by sampling the key 
+space. The idea behind sampling is that we look at a small subset of the keys to approximate 
+the key distribution. Hadoop first have InputSampler class which will return a sample of keys,
+then writePartitionFile() method on InputSampler is used to creates a sequence file to store
+the keys that define the partitions.
+
+
+####################
+## Secondary Sort
+If the key has multiple components, like IP address: (192.168.1.1) ==> c(192, 168, 1, 1)
+We need two things to make the secondary sort work. First we need a new custemized partitioner.
+By seeting apartitioner to partition by the specific fields of the key, we can guarantee that
+key-value pairs for the same field of key will go to the same reducer.
+
+Another thing is a grouping comparator, it sorts the keys. We can specify different order patern
+for different fields of the key.
+
