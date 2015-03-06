@@ -14,9 +14,9 @@ is defeated.
 There are two different situations that will relate to **.
 First one happens when we are trying to define a function:
 ----
-def fun(**keyarg):
-    for a in kwargs:
-		print a, kwargs[a]
+def fun(**keyargs):
+    for a in keyargs:
+		  print a, keyargs[a]
 
 output looks like this:
 fun(name="one", age=27)
@@ -32,3 +32,46 @@ output looks like this:
 fun(**{'name':1, 'age':2})
 1 2
 ----
+
+#########################
+#3. print and stdout
+It is possible to reassign sys.stdout to any user-defined object that provides the same write 
+method as files. Because the print statement just sends text to the sys.stdout.write method, 
+you can capture printed text in your programs by assigning sys.stdout to an object whose write 
+method processes the text in arbitrary ways.
+----
+print('hello word') is same as:
+import sys
+sys.stdout.write('hello world\n')
+----
+----
+class FileFaker:
+  def write(self, string):
+    a = string + 'aaaa'
+    filele = open('tmp.txt', 'a')
+    filele.write(a)
+    filele.close()
+
+myobj = FileFaker()
+print('aaa', file = myobj)
+----
+
+##########################
+#4. iterable and iterator
+The iterable object you request iteration for, whose __iter__ is run by iter
+The iterator object returned by the iterable that actually produces values during the iteration,
+whose __next__ is run by next and raises StopIteration when finished producing results
+----
+L = [1,2,3]   # an iterable
+I = iter(L)   # obtain an iterator object from an iterable
+I.__next__()  # call iterator's next to advance to next item
+----
+Moreover, file object is its own iterator, files have their own __next__ method
+----
+f = open('tmp.txt')
+iter(f) is f
+iter(f) is f.__iter__()
+f.__next__()
+----
+Moreover, dictionaries are iterables with an iterator that automatically returns one key at a time
+I = iter(dict(a=1,b=2))
