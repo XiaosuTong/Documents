@@ -31,6 +31,11 @@ ssh -L50030:adhara1:50030 shaula.stat.purdue.edu
 http://localhost:50030
 
 
+###########################
+##access the HDFS on adhara from rossmann
+hadoop fs -ls hftp://adhara1.stat.purdue.edu:50070/ln/tongx/
+
+
 ################
 ##Access jobtracker on rossmann
 ssh -L50030:hadoop-01:50030 rossmann-wsc.rcac.purdue.edu
