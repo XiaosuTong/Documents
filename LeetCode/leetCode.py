@@ -181,7 +181,7 @@ class Solution:
   # @param root, a tree node
   # @param sum, an integer
   # @return a boolean
-  def cum(self, value, root):
+  def cum(self, value, root): ## value is the current sum left
     if root == None:
       return False
     elif root.left == None and root.right == None:
