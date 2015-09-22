@@ -27,7 +27,7 @@ R CMD INSTALL Rhipe/Rhipe_0.74.0.tar.gz
 
 ###########################
 ##Access jobtracker on adhara
-ssh -L50030:adhara1:50030 shaula.stat.purdue.edu
+ssh -CD2000 -L50030:adhara1:50030 shaula.stat.purdue.edu
 http://localhost:50030
 
 
@@ -38,9 +38,8 @@ hadoop fs -ls hftp://adhara1.stat.purdue.edu:50070/ln/tongx/
 
 ################
 ##Access jobtracker on rossmann
-ssh -L50030:hadoop-01:50030 rossmann-wsc.rcac.purdue.edu
-http://localhost:50030
-
+ssh -CD2000	-L8088:wsc-adm:8088 rossmann-wsc.rcac.purdue.edu
+http://localhost:8088/cluster
 
 ##################
 ##What is RhipeLib.tar.gz on HDFS?

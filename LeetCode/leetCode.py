@@ -417,6 +417,7 @@ class Solution:
         node = node.right
     return rst
 
+
 ###############################################################
 ##               Binary Tree Preorder Traversal              ##
 ###############################################################
@@ -452,3 +453,460 @@ class Solution:
         node = stack.pop().right
     return rst
 
+
+#####################################################
+##                 Roman to Integer                ##
+#####################################################
+##  Given a roman numeral, convert it to an integer.
+##  Input is guaranteed to be within the range from 1 to 3999.
+
+class Solution:
+  # @return an integer
+  def romanToInt(self, s):
+    pre = ' '
+    num = 0      
+    for i in s:
+      if i == "I":
+        num += 1
+      elif i == "V":
+        if pre == "I":
+          num += (4-1)
+        else:
+          num += 5
+      elif i == "X":
+        if pre == "I":
+          num += (9-1)
+        else:
+          num += 10
+      elif i == "L":
+        if pre == "X":
+          num += (40-10)
+        else:
+          num += 50
+      elif i == "C":
+        if pre == "X":
+          num += (90-10)
+        else:
+          num += 100
+      elif i == "D":
+        if pre == "C":
+          num += (400-100)
+        else:
+          num += 500
+      elif i == "M":
+        if pre == "C":
+          num += (900-100)
+        else:
+          num += 1000
+      pre = i
+    return num
+
+
+####################################################
+##                    Plus One                    ##
+####################################################
+
+class Solution:
+  # @param digits, a list of integer digits
+  # @return a list of integer digits
+  def plusOne(self, digits):
+    length = len(digits)
+    f = 1
+    for i in range(length, 0, -1):
+      digits[i-1] = digits[i-1] + f
+      if digits[i-1] < 10:
+        f = 0
+      else:
+        digits[i-1] = 0
+        f = 1
+    if sum(digits) == 0:
+      digits = [1] + digits
+    return digits
+
+
+####################################################
+##                  Rotate Array                  ##
+####################################################
+##  Rotate an array of n elements to the right by k steps.
+##  For example, with n = 7 and k = 3, the array [1,2,3,4,5,6,7] is rotated 
+##  to [5,6,7,1,2,3,4]. 
+class Solution:
+  # @param nums, a list of integer
+  # @param k, num of steps
+  # @return nothing, please modify the nums list in-place.
+  def rotate(self, nums, k):
+    length = len(nums)
+    for i in range(0, k):
+      b = nums[-1]
+      for j in range(length-1, 0, -1):
+        nums[j] = nums[j-1]
+      nums[0] = b
+
+class Solution:
+  # @param nums, a list of integer
+  # @param k, num of steps
+  # @return nothing, please modify the nums list in-place.
+  def rotate(self, nums, k):
+    length = len(nums)
+    if length < k:
+      k = k - length
+    tmp = nums[(length-k):length]
+    nums[k:length] = nums[0:(length-k)]
+    nums[0:k] = tmp
+
+
+#####################################################
+##                Remove Element                   ##
+#####################################################
+##  Given an array and a value, remove all instances of that value in place and return the new length.
+##The order of elements can be changed. It doesn't matter what you leave beyond the new length
+
+class Solution:
+  # @param    A       a list of integers
+  # @param    elem    an integer, value need to be removed
+  # @return an integer
+  def removeElement(self, A, elem):
+    length = len(A)
+    idx = length -1
+    for i in range(length-1,-1,-1):
+      if A[i] == elem:
+        A[i] = A[idx]
+        A[idx] = elem
+        idx -= 1
+    return idx+1
+
+
+######################################################
+##                   Two Sum                        ##
+######################################################
+##  Given an array of integers, find two numbers such that they add up to a specific target number.
+##
+##  The function twoSum should return indices of the two numbers such that they add up to the target, 
+##  where index1 must be less than index2. Please note that your returned answers (both index1 and index2) are not zero-based.
+##
+##  You may assume that each input would have exactly one solution.
+##
+##  Input: numbers={2, 7, 11, 15}, target=9
+##  Output: index1=1, index2=2 
+
+class Solution:
+  # @return a tuple, (index1, index2)
+  def twoSum(self, num, target):
+    index = []
+    numsort = num[:]
+    numsort.sort()
+    i = 0
+    j = len(numsort) - 1
+    while i < j:
+      if numsort[i] + numsort[j] == target:
+        for k in range(0, len(num)):
+          if num[k] == numsort[i]:
+            index.append(k)
+            break
+        for k in range(len(num)-1,-1,-1):
+          if num[k] == numsort[j]:
+            index.append(k)
+            break
+        index.sort()
+        break
+      elif numsort[i] + numsort[j] > target:
+        j -= 1
+      else:
+        i += 1
+    return (index[0]+1, index[1]+1)
+
+
+class Solution:
+  # @return a tuple, (index1, index2)
+  def twoSum(self, num, target):
+    dic = {}
+    for i in range(0, len(num)):
+      x = num[i]
+      if target-x in dic:
+        return (dic[target-x]+1, i+1)
+      else:
+        dic[x] = i
+  
+######################################################
+##        Remove Duplicates from Sorted Array       ##
+######################################################
+##  Given a sorted array, remove the duplicates in place such that each element 
+##  appear only once and return the new length.
+##
+##  Do not allocate extra space for another array, you must do this in place with constant memory.
+##
+##  For example,
+##  Given input array A = [1,1,2],
+##  Your function should return length = 2, and A is now [1,2]. 
+
+class Solution:
+  # @param a list of integers
+  # @return an integer
+  def removeDuplicates(self, A):
+    if A == []:
+      return 0
+    else:
+      slow = 0
+      for fast in range(len(A)):
+        if A[slow] == A[fast]:
+          continue
+        else:
+          slow += 1
+          A[slow] = A[fast]
+      return slow + 1
+
+
+######################################################
+##      Remove Duplicates from Sorted Array II      ##
+######################################################
+##  Follow up for "Remove Duplicates":
+##  What if duplicates are allowed at most twice?
+##
+##  For example,
+##  Given sorted array A = [1,1,1,2,2,3],
+##  Your function should return length = 5, and A is now [1,1,2,2,3]. 
+
+class Solution:
+  # @param A a list of integers
+  # @return an integer
+  def removeDuplicates(self, A):
+    if A == []:
+      return 0
+    elif len(A) <= 2:
+      return len(A)
+    else:
+      slow = 0
+      time = 0
+      for fast in range(len(A)):
+        if A[slow] == A[fast]:
+          time += 1
+          if time == 2:
+            slow += 1
+            A[slow] = A[fast]
+        else:
+          slow += 1
+          A[slow] = A[fast]
+          time = 1
+      return slow + 1
+
+
+####################################################
+##          Merge Sorted Array                    ##
+####################################################
+##  Given two sorted integer arrays A and B, merge B into A as one sorted array.
+
+##  You may assume that A has enough space (size that is greater or equal to m + n) 
+##  to hold additional elements from B. The number of elements initialized in A and B are m and n respectively.
+
+class Solution:
+  # @param A  a list of integers
+  # @param m  an integer, length of A
+  # @param B  a list of integers
+  # @param n  an integer, length of B
+  # @return nothing(void)
+  def merge(self, A, m, B, n):
+    tmp = [0 for i in range(m+n)]
+    i = 0
+    j = 0
+    k = 0
+    while i < m and j < n:
+      if A[i] <= B[j]:
+        tmp[k] = A[i]
+        i += 1
+      else:
+        tmp[k] =  B[j]
+        j += 1
+      k += 1
+    if i == m:
+      tmp[k:(m+n)] = B[j:n]
+    if j == n:
+      tmp[k:(m+n)] = A[i:m]
+    A[:] = tmp[:]
+
+
+####################################################
+##     Best Time to Buy and Sell Stock            ##
+####################################################
+## Say you have an array for which the ith element is the price of a given stock on day i.
+
+## If you were only permitted to complete at most one transaction (ie, buy one and sell one
+## share of the stock), design an algorithm to find the maximum profit.    
+
+class Solution:
+  # @param prices, a list of integer
+  # @return an integer
+  def maxProfit(self, prices):
+    if len(prices) == 0:
+      return 0
+    else:
+      maxProfit = 0
+      lowPrice = prices[0]
+      for i in range(len(prices)):
+        if prices[i] < lowPrice:
+          lowPrice = prices[i]
+        maxProfit = max(maxProfit, prices[i]-lowPrice)
+      return maxProfit
+
+
+#####################################################
+##    Best Time to Buy and Sell Stock II           ##
+#####################################################
+## Say you have an array for which the ith element is the price of a given stock on day i.
+##
+## Design an algorithm to find the maximum profit. You may complete as many transactions 
+## as you like (ie, buy one and sell one share of the stock multiple times). However, you 
+## may not engage in multiple transactions at the same time (ie, you must sell the stock 
+##  before you buy again).
+
+class Solution:
+  # @param prices, a list of integer
+  # @return an integer
+  def maxProfit(self, prices):
+    profit = 0
+    for i in range(1, len(prices)):
+      if prices[i] > prices[i-1]:
+        profit += prices[i] - prices[i-1]
+    return profit
+
+
+#####################################################
+##                Majority Element                 ##
+##################################################### 
+##  Given an array of size n, find the majority element. The majority element is the element 
+##  that appears more than ⌊ n/2 ⌋ times.
+##
+##  You may assume that the array is non-empty and the majority element always exist in the array.
+class Solution:
+  # @param num, a list of integers
+  # @return an integer
+  def majorityElement(self, num):
+    rst = 0
+    freq = 0
+    for i in num:
+      if freq == 0:
+        rst = i
+        freq += 1
+      else:
+        if rst == i:
+          freq += 1
+        else:
+          freq -= 1
+    return rst
+        
+
+#####################################################
+##              Nth Fibonacci number               ##
+#####################################################
+
+class Solution:
+  def fibona(self, n):
+    if n == 0:
+      return None
+    if n == 1 or n == 2:
+      return 1
+    else:
+      fib = 0
+      first = 1
+      second = 1
+      for i in range(n-2):
+        fib = first + second
+        first = second
+        second = fib
+    return fib
+
+
+#####################################################
+##             Valid Parentheses                   ##
+#####################################################
+## Given a string containing just the characters '(', ')', '{', '}', '[' and ']', 
+## determine if the input string is valid.
+##
+## The brackets must close in the correct order, "()" and "()[]{}" are all valid 
+## but "(]" and "([)]" are not.
+  
+class Solution:
+  # @return a boolean
+  def isValid(self, s):
+    stack = []
+    for i in range(len(s)):
+      if s[i] == '(' or s[i] == '[' or s[i] == '{':
+        stack.append(s[i])
+      if s[i] == ')':
+        if stack == [] or stack.pop() != '(':
+          return False
+      if s[i] == ']':
+        if stack == [] or stack.pop() != '[':
+          return False
+      if s[i] == '}':
+        if stack == [] or stack.pop() != '{':
+          return False
+    if stack:
+      return False
+    else:
+      return True
+
+
+#####################################################
+##               Excel Sheet Column Number         ##
+#####################################################
+## Given a column title as appear in an Excel sheet, return its corresponding column number.
+## 
+## For example:
+##
+##    A -> 1
+##    B -> 2
+##    C -> 3
+##    ...
+##    Z -> 26
+##    AA -> 27
+##    AB -> 28 
+
+import re
+
+class Solution:
+  # @param s, a string
+  # @return an integer
+  def titleToNumber(self, s):
+    string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    idx = 1
+    num = 0
+    for i in s[::-1]:
+      num = num + (26**(idx-1))*(re.search(i, string).start()+1)
+      idx += 1
+    return num
+
+
+
+      
+        
+
+
+
+
+
+
+
+
+
+#####################################################
+##                 ZigZag Conversion               ##
+#####################################################
+##  The string "PAYPALISHIRING" is written in a zigzag pattern on a given number of rows 
+##  like this: (you may want to display this pattern in a fixed font for better legibility)
+##
+##  P   A   H   N (0, 4, 8, 12)  #0
+##  A P L S I I G (1, 3, 5, 7, ) #1
+##  Y   I   R     (2, 6, 10,)    #2
+##
+##  And then read line by line: "PAHNAPLSIIGYIR"
+##  Write the code that will take a string and make this conversion given a number of rows: 
+
+class Solution:
+  # @return a string
+  def convert(self, s, nRows):
+    mylist = []
+    length = len(s)
+    for i in range(nRows):
+      j = i
+      while j <= length:
+        mylist.append(s[j])
